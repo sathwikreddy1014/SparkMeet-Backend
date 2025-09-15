@@ -2,7 +2,6 @@ const express = require('express');
 const { userAuth } = require('../middlewares/adminAuth');
 const ConnectionRequest = require('../models/connectionRequest');
 const User = require('../models/user');
-
 const userRouter = express.Router();
 
 // Only expose safe fields from User to the client
@@ -36,35 +35,47 @@ userRouter.get('/user/requests/received', userAuth, async (req, res) => {
 /**
  * GET /user/connections
  */
-userRouter.get('/user/connections', userAuth, async (req, res) => {
-    try {
-        const loggedInUser = req.user;
 
-        // Find requests where current user is either sender or receiver
-        const connectionRequest = await ConnectionRequest.find({
-            $or: [
-                { fromuserId: loggedInUser._id, status: "accepted" },
-                { touserId: loggedInUser._id, status: "accepted" }
-            ]
-        })
-        // Populate both sender and receiver with safe fields
-        .populate('fromuserId', USER_SAFE_DATA)
-        .populate('touserId', USER_SAFE_DATA);
+userRouter.get("/user/connections", userAuth, async (req, res) => {
+  try {
+    const loggedInUser = req.user;
 
-        // For each connection, return the "other" user
-        const data = connectionRequest.map((row) => {
-            if (row.fromuserId._id.toString() === loggedInUser._id.toString()) {
-                return row.touserId; // current user is sender → return receiver
-            }
-            return row.fromuserId; // current user is receiver → return sender
-        });
-
-        res.json({ data });
-
-    } catch (err) {
-        res.status(400).send("ERROR: " + err.message);
+    if (!loggedInUser) {
+      return res.status(401).json({ error: "User not authenticated" });
     }
+
+    // Fetch all accepted connections where user is sender or receiver
+    const connectionRequests = await ConnectionRequest.find({
+      $or: [
+        { fromuserId: loggedInUser._id, status: "accepted" },
+        { touserId: loggedInUser._id, status: "accepted" },
+      ],
+    })
+      .populate("fromuserId", USER_SAFE_DATA)
+      .populate("touserId", USER_SAFE_DATA);
+
+    // Filter out any connection requests where either user is missing
+    const validConnections = connectionRequests.filter(
+      (row) => row.fromuserId && row.touserId
+    );
+
+    // Map to return the "other" user in each connection
+    const connectionsData = validConnections.map((row) => {
+      if (row.fromuserId._id.toString() === loggedInUser._id.toString()) {
+        return row.touserId; // current user is sender → return receiver
+      }
+      return row.fromuserId; // current user is receiver → return sender
+    });
+
+    res.json({ data: connectionsData });
+  } catch (err) {
+    console.error("ERROR in /user/connections:", err.message);
+    res.status(500).json({ error: "Server error: " + err.message });
+  }
 });
+
+module.exports = userRouter;
+
 
 /**
  * GET /feed
@@ -107,6 +118,5 @@ userRouter.get('/feed', userAuth, async (req, res) => {
         res.status(500).json({ success: false, message: err.message });
     }
 });
-
 
 module.exports = userRouter;

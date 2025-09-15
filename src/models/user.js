@@ -33,16 +33,16 @@ const userSchema = new mongoose.Schema({
     gender: {
         type: String,
         validate(value) {
-            if (!["male", "female", "others"].includes(value.toLowerCase())) {
+            if (!["Male", "Female", "Others"].includes(value.toLowerCase())) {
                 throw new Error("Gender data is not valid");
             }
         }
     },
     photoUrl: {
         type: String,
-        default: "https://example.com/default-avatar.png"
+        default: "https://media.istockphoto.com/id/1131164548/vector/avatar-5.jpg?s=612x612&w=0&k=20&c=CK49ShLJwDxE4kiroCR42kimTuuhvuo2FH5y_6aSgEo="
     },
-    about: {
+    about: {    
         type: String,
         default: "about the user"
     },
@@ -53,30 +53,25 @@ const userSchema = new mongoose.Schema({
 
 
 // ✅ Hash password before saving
-userSchema.pre('save', async function (next) {
-    if (!this.isModified('password')) return next();
-
-    try {
-        const salt = await bcrypt.genSalt(10);
-        this.password = await bcrypt.hash(this.password, salt);
-        next();
-    } catch (err) {
-        next(err);
-    }
+userSchema.pre("save", async function (next) {
+  if (this.isModified("password")) {
+    this.password = await bcrypt.hash(this.password, 10);
+  }
+  next();
 });
 
 // ✅ Password verification method
-userSchema.methods.verifyPassword = async function (password) {
-    return await bcrypt.compare(password, this.password);
+userSchema.methods.verifyPassword = async function (plainPassword) {
+  return await bcrypt.compare(plainPassword, this.password);
 };
 
 // ✅ JWT generation method
 userSchema.methods.generateJWT = function () {
-    return jwt.sign(
-        { _id: this._id, email: this.emailId },
-        process.env.JWT_SECRET,
-        { expiresIn: "1d" }
-    );
+  return jwt.sign(
+    { _id: this._id },   // ✅ force _id
+    process.env.JWT_SECRET,
+    { expiresIn: "1d" }
+  );
 };
 
 const User = mongoose.model("User", userSchema);

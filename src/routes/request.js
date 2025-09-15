@@ -73,7 +73,7 @@ requestRouter.post(
             const { status, requestId } = req.params
 
             const allowedStatus = ["accepted", "rejected"];
-            if(!allowedStatus.includes(status)) return res.status(400).json({ message: `this type of satus '${status}' is not allowed`});
+            if(!allowedStatus.includes(status)) return res.status(400).json({ message: `this type of status '${status}' is not allowed`});
 
             const connectionRequest = await ConnectionRequest.findOne({
                 _id: requestId,

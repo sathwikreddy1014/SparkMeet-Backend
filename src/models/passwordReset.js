@@ -5,7 +5,7 @@ const passwordResetSchema = new mongoose.Schema({
         type: String,
         required: true
     },
-    code: {
+    otp: {
         type: String,
         required: true
     },

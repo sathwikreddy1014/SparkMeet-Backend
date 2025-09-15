@@ -6,8 +6,8 @@ const bcrypt = require('bcrypt');
 const PasswordReset = require('../models/passwordReset.js');
 const nodemailer = require('nodemailer');
 const User = require('../models/user.js');
-
 const profileRouter = express.Router();
+
 
 //=== PROFILE VIEW ===//
 profileRouter.get('/profile/view', userAuth, async (req, res) => {
@@ -21,7 +21,6 @@ profileRouter.get('/profile/view', userAuth, async (req, res) => {
         res.status(500).json({ success: false, message: err.message });
     }
 });
-
 //=== PROFILE EDIT ===//
 profileRouter.patch('/profile/edit', userAuth, async (req, res) => {
     try {
@@ -65,75 +64,62 @@ profileRouter.patch('/profile/password', userAuth, async (req, res) => {
     }
 });
 //=== FORGET PASSWORD ===//
-profileRouter.post('/forgotpassword', async (req, res) => {
-    
+profileRouter.post('/forgot-password', async (req, res) => {
   try {
-      const { emailId } = req.body;
-  
-      const user = await User.findOne({ emailId });
-  
-      if (!user) return res.status(404).json({ message: "User not found" });
-  
-      const code = String(Math.floor(100000 + Math.random() * 900000)).padStart(6, "0");
 
-      await PasswordReset.deleteMany({ emailId });
-      await PasswordReset.create({
-          emailId,
-          code, 
-          expiresAt: new Date(Date.now() + 15 * 60 * 1000)
-      });
-  
-      const transporter = nodemailer.createTransport({
-          service: "gmail",
-          auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
-      });
-  
-     await transporter.sendMail({
-  from: process.env.SMTP_USER,
-  to: emailId,
-  subject: "Your Password Verification Code",
-  html: `
-    <div style="font-family: Arial, sans-serif; background-color: #ffffff; padding: 20px; max-width: 500px; margin: auto; border: 1px solid #e0e0e0; border-radius: 8px;">
-      <h2 style="color: #202124; font-weight: normal; text-align: center;">Password Verification</h2>
+    const { emailId } = req.body;
+    const user = await User.findOne({ emailId });
+    if (!user) return res.status(404).json({ message: "User not found" });
 
-      <p style="color: #202124; font-size: 14px; text-align: center;">
-        Hello <strong>${user.firstName}</strong>,  
-        <br><br>
-        We received a request to change your account password. Please enter the verification code below to continue:
-      </p>
+    const otp = String(Math.floor(100000 + Math.random() * 900000)); // string
 
-      <div style="background-color: #f1f3f4; padding: 14px 20px; text-align: center; font-size: 24px; font-weight: bold; letter-spacing: 4px; margin: 20px auto; border-radius: 4px; color: #202124; width: fit-content; min-width: 120px;">
-        ${code}
-      </div>
+    await PasswordReset.deleteMany({ emailId });
+    await PasswordReset.create({
+      emailId,
+      otp,
+      expiresAt: new Date(Date.now() + 5 * 60 * 1000)
+    });
 
-      <p style="color: #5f6368; font-size: 13px; text-align: center;">
-        This code will expire in <strong>10 minutes</strong>.
-      </p>
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
+    });
 
-      <p style="color: #5f6368; font-size: 13px; text-align: center;">
-        If you didn’t request this change, you can safely ignore this email or contact our support team.
-      </p>
+    await transporter.sendMail({
+      from: process.env.SMTP_USER,
+      to: emailId,
+      subject: "Your Password Verification Code",
+      html: `
+        <div style="font-family: Arial, sans-serif; background-color: #ffffff; padding: 20px; max-width: 500px; margin: auto; border: 1px solid #e0e0e0; border-radius: 8px;">
+          <h2 style="color: #202124; font-weight: normal; text-align: center;">Password Verification</h2>
+          <p style="color: #202124; font-size: 14px; text-align: center;">
+            Hello <strong>${user.firstName}</strong>,  
+            <br><br>
+            Your verification code:
+          </p>
+          <div style="background-color: #f1f3f4; padding: 14px 20px; text-align: center; font-size: 24px; font-weight: bold; letter-spacing: 4px; margin: 20px auto; border-radius: 4px; color: #202124; width: fit-content; min-width: 120px;">
+            ${otp}
+          </div>
+          <p style="color: #5f6368; font-size: 13px; text-align: center;">
+            This code will expire in <strong>10 minutes</strong>.
+          </p>
+        </div>
+      `
+    });
 
-      <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 25px 0;">
+    res.cookie("resetEmail", emailId, { httpOnly: true, sameSite: "strict" });
+    res.json({ message: "OTP sent to your email" });
 
-      <p style="color: #5f6368; font-size: 12px; text-align: center;">
-        © ${new Date().getFullYear()} Tinder. All rights reserved.
-      </p>
-    </div>
-  `
-});
-
-      res.cookie("resetEmail", emailId, { httpOnly: true, sameSite: "strict" });
-      res.json({ message: "OTP sent to your email" });
-  
   } catch (error) {
-     res.status(500).json({ message: "Server error", error: error.message });
+    console.error("Error in /forgot-password:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 });
+
 //=== RESET CODE ===//
 profileRouter.post("/verify-reset-code", async (req, res) => {
-  const { emailId, code } = req.body;
-  const record = await PasswordReset.findOne({ emailId, code });
+  const { emailId, otp } = req.body;
+  const record = await PasswordReset.findOne({ emailId, otp });
 
   if (!record || record.expiresAt < new Date()) {
     return res.status(400).json({ message: "Invalid or expired code" });
@@ -144,20 +130,42 @@ profileRouter.post("/verify-reset-code", async (req, res) => {
 });
 //  Reset Password
 profileRouter.post("/reset-password", async (req, res) => {
-  const { newPassword } = req.body;
-  const emailId = req.cookies.resetToken;
-  if (!emailId) return res.status(400).json({ message: "Not authorized to reset password" });
+  try {
+    const { newPassword, confirmPassword } = req.body;
 
-  const user = await User.findOne({ emailId });
-  if (!user) return res.status(404).json({ message: "User not found" });
+    // Check if both passwords are provided
+    if (!newPassword || !confirmPassword) {
+      return res.status(400).json({ message: "Both password fields are required" });
+    }
 
-  user.password = newPassword; // plain text, pre-save hook will hash
-  await user.save();
+    // Check if passwords match
+    if (newPassword !== confirmPassword) {
+      return res.status(400).json({ message: "Passwords do not match" });
+    }
 
-  res.clearCookie("resetToken");
-  res.clearCookie("resetEmail");
-  res.json({ message: "Password reset successful" });
+    // Get user from cookie
+    const emailId = req.cookies.resetToken;
+    if (!emailId) return res.status(400).json({ message: "Not authorized to reset password" });
+
+    const user = await User.findOne({ emailId });
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    // Update password (assuming pre-save hook hashes it)
+    user.password = newPassword;
+    await user.save();
+
+    // Clear reset cookies
+    res.clearCookie("resetToken");
+    res.clearCookie("resetEmail");
+
+    res.json({ message: "Password reset successful" });
+
+  } catch (error) {
+    console.error("Error in /reset-password:", error);
+    res.status(500).json({ message: "Server error" });
+  }
 });
+
 
 
 module.exports = profileRouter;
