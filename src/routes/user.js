@@ -5,7 +5,7 @@ const User = require('../models/user');
 const userRouter = express.Router();
 
 // Only expose safe fields from User to the client
-const USER_SAFE_DATA = ["firstName", "lastName", "age", "gender", "photoUrl","about"];
+const USER_SAFE_DATA = ["firstName", "lastName", "age", "gender", "photoUrl","about","createdAt"];
 
 /**
  * GET /user/requests/received
@@ -118,5 +118,7 @@ userRouter.get('/feed', userAuth, async (req, res) => {
         res.status(500).json({ success: false, message: err.message });
     }
 });
+
+
 
 module.exports = userRouter;

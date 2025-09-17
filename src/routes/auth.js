@@ -30,11 +30,21 @@ authRouter.post("/signup", async (req, res) => {
       gender,
     });
 
-    await user.save();
+    const savedUser = await user.save();
+
+     // Generate JWT
+    const token = savedUser.generateJWT();
+
+    // Set cookie
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 24 * 60 * 60 * 1000, // 1 day
+    });
 
     res
-      .status(201)
-      .json({ message: "Signup successful.", userId: user._id.toString() });
+      .status(201).json({message: "SignedUp Sucessfully ", data: savedUser})
   } catch (err) {
     res.status(400).json({ error: "Signup error: " + err.message });
   }
@@ -71,7 +81,7 @@ authRouter.post("/login", async (req, res) => {
     const user = userOne.toObject();
     delete user.password;
 
-    res.json({ message: "Login successful", user });
+    res.json({ data: user , message: "Login successful" });
   } catch (err) {
     res.status(500).json({ error: "Login error: " + err.message });
   }
