@@ -30,14 +30,12 @@ const userSchema = new mongoose.Schema({
     age: {
         type: Number
     },
-    gender: {
-        type: String,
-        validate(value) {
-            if (!["Male", "Female", "Others"].includes(value.toLowerCase())) {
-                throw new Error("Gender data is not valid");
-            }
-        }
-    },
+   gender: {
+  type: String,
+  lowercase: true, // Mongoose will convert automatically
+  enum: ["male", "female", "others"], // built-in validation
+},
+
     photoUrl: {
         type: String,
         default: "https://media.istockphoto.com/id/1131164548/vector/avatar-5.jpg?s=612x612&w=0&k=20&c=CK49ShLJwDxE4kiroCR42kimTuuhvuo2FH5y_6aSgEo="
@@ -46,8 +44,112 @@ const userSchema = new mongoose.Schema({
         type: String,
         default: "about the user"
     },
-    Skills: [{
-        type: String
+  // 📍 Location
+  location: {
+    type: String, // store city name
+    trim: true,
+  },
+
+  // 📏 Height
+  height: {
+    value: { type: Number }, // numeric height
+    unit: { type: String, enum: ["cm", "ft"] }, // cm or ft
+  },
+
+  // 🎓 Education
+  education: {
+    type: String,
+    enum: ["High School", "Bachelor’s", "Master’s", "PhD", "Other"],
+  },
+
+  // 💼 Occupation
+  occupation: {
+    type: String,
+    enum: ["Job", "Business", "Student", "Other"],
+  },
+
+  // 🙏 Beliefs
+  beliefs: {
+    type: String,
+    enum: ["Spiritual", "Religious", "Agnostic", "Atheist"],
+  },
+
+  // 🗣️ Languages (max 5)
+  languages: {
+    type: [String],
+    validate: [(val) => val.length <= 5, "Max 5 languages allowed"],
+  },
+
+  // ❤️ Looking For
+  lookingFor: {
+    type: String,
+    enum: ["Long Term", "Short Term", "Go with the Flow"],
+  },
+
+  // 🎂 Preferred Age
+  preferredAge: {
+    min: { type: Number },
+    max: { type: Number },
+  },
+
+  // 📍 Distance Preference
+  distancePreference: {
+    type: Number, // in km
+    max: 120,
+  },
+
+  // 🎨 Hobbies
+  hobbies: [String], // array of hobbies
+
+  // 🎬 Favorite Movies
+  favoriteMovies: [String], // array of movie names
+
+  // 🎶 Favorite Music
+  favoriteMusic: [String], // array of song names
+
+  // 🏀 Sports
+  sports: [String], // array of sports
+
+  // ✈️ Travel Preferences
+  travelPreferences: [String], // array of travel choices
+
+  // 🐶 Pets
+  pets: {
+    type: String,
+    enum: ["Dog Person", "Cat Person", "Both", "No Pets"],
+  },
+
+  // 🍷 Drinking
+  drinking: {
+    type: String,
+    enum: ["Not for Me", "Occasionally", "Yes"],
+  },
+
+  // 🚬 Smoking
+  smoking: {
+    type: String,
+    enum: ["No", "Occasionally", "Yes"],
+  },
+
+  // 🥗 Diet
+  diet: {
+    type: String,
+    enum: ["Veg", "Non-Veg", "Vegan"],
+  },
+    prompt1: [{
+      type: String
+    }],
+    prompt2: [{
+      type: String
+    }],
+    prompt3: [{
+      type: String
+    }],
+    prompt4: [{
+      type: String
+    }],
+    prompt5: [{
+      type: String
     }]
 }, { timestamps: true });
 

@@ -6,9 +6,31 @@ const validateProfileData = (req) => {
         "lastName",
         "photoUrl",
         "age",
-        "skills",
         "gender",
-        "about"
+        "about",
+        "Location",
+        "Height",
+        "Education",
+        "Occupation",
+        "Lamguages",
+        "Beliefs",
+        "LookingFor",
+        "PreferredAge",
+        "DistancePreference",
+        "Hobbies",
+        "Favoritemovies",
+        "FavoriteMusic",
+        "Sports",
+        "TravelPreferences",
+        "pets",
+        "Drinking",
+        "Smoking",
+        "Diet",
+        "prompt1",
+        "prompt2",
+        "prompt3",
+        "prompt4",
+        "prompt5"
     ];
 
     const invalidFields = Object.keys(req.body).filter(field => !allowedFields.includes(field));
