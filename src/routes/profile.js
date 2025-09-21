@@ -22,29 +22,35 @@ profileRouter.get('/profile/view', userAuth, async (req, res) => {
     }
 });
 //=== PROFILE EDIT ===//
-profileRouter.patch('/profile/edit', userAuth, async (req, res) => {
-    try {
-        const validation = validateProfileData(req);
-        if (!validation.valid) {
-            throw new Error("request while editing: " + validation.message);
-        }
+profileRouter.patch("/profile/edit", userAuth, async (req, res) => {
+  try {
+    const updates = req.body;
 
-        const loggedInUser = req.user
-        
-        Object.keys(req.body).forEach(key => (loggedInUser[key] = req.body[key]));
+    // remove empty/null fields so they don’t overwrite
+    Object.keys(updates).forEach((key) => {
+      if (
+        updates[key] === null ||
+        updates[key] === "" ||
+        (Array.isArray(updates[key]) && updates[key].length === 0)
+      ) {
+        delete updates[key];
+      }
+    });
 
-        await loggedInUser.save();
+    const updatedUser = await User.findByIdAndUpdate(
+      req.user._id, // user from token
+      { $set: updates },
+      { new: true, runValidators: true }
+    );
 
-        res.json({
-            message: `The user with email '${loggedInUser.emailId}' has been updated successfully.`,
-            data: loggedInUser
-        });
-        
-    } catch (error) {
-    res.status(400).send("ERROR WHILE EDITING: " + error.message)
-    }
+    res.json({ success: true, user: updatedUser });
+  } catch (err) {
+    console.error("Update error:", err);
+    res.status(500).json({ success: false, message: "Server error", error: err.message });
+  }
+}); 
 
-});
+
 //=== PASWWORD EDIT ===//
 profileRouter.patch('/profile/password', userAuth, async (req, res) => {
     try {
@@ -69,7 +75,7 @@ profileRouter.post('/forgot-password', async (req, res) => {
 
     const { emailId } = req.body;
     const user = await User.findOne({ emailId });
-    if (!user) return res.status(404).json({ message: "User not found" });
+    if (!user) return res.status(200).json({ message: "If an account exists with this email, you will receive a verification code." });
 
     const otp = String(Math.floor(100000 + Math.random() * 900000)); // string
 
@@ -108,7 +114,10 @@ profileRouter.post('/forgot-password', async (req, res) => {
     });
 
     res.cookie("resetEmail", emailId, { httpOnly: true, sameSite: "strict" });
-    res.json({ message: "OTP sent to your email" });
+    res.json({
+      message:
+        "If an account exists with this email, you will receive a verification code."
+    });
 
   } catch (error) {
     console.error("Error in /forgot-password:", error);
@@ -131,17 +140,15 @@ profileRouter.post("/verify-reset-code", async (req, res) => {
 //  Reset Password
 profileRouter.post("/reset-password", async (req, res) => {
   try {
-    const { newPassword, confirmPassword } = req.body;
+    const { newPassword } = req.body;
 
     // Check if both passwords are provided
-    if (!newPassword || !confirmPassword) {
-      return res.status(400).json({ message: "Both password fields are required" });
+    if (!newPassword ) {
+      return res.status(400).json({ message: "Plsease enetr password" });
     }
 
     // Check if passwords match
-    if (newPassword !== confirmPassword) {
-      return res.status(400).json({ message: "Passwords do not match" });
-    }
+
 
     // Get user from cookie
     const emailId = req.cookies.resetToken;

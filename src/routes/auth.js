@@ -54,16 +54,16 @@ authRouter.post("/signup", async (req, res) => {
 authRouter.post("/login", async (req, res) => {
   try {
     const { emailId, password } = req.body;
-
+    
     const userOne = await User.findOne({ emailId });
     if (!userOne) {
-      return res.status(401).json({ error: "Invalid email or password." });
+      return res.status(401).json({ error: "INVALID EMAIL OR PASSWORD." });
     }
 
     // Verify password
     const isPasswordValid = await userOne.verifyPassword(password);
     if (!isPasswordValid) {
-      return res.status(401).json({ error: "Invalid email or password." });
+      return res.status(401).json({ error: "INVALID EMAIL OR PASSWORD." });
     }
 
     // Generate JWT

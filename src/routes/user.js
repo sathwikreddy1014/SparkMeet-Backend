@@ -5,32 +5,45 @@ const User = require('../models/user');
 const userRouter = express.Router();
 
 // Only expose safe fields from User to the client
-const USER_SAFE_DATA = ["firstName", "lastName", "age", "gender", "photoUrl","about","createdAt"];
+const USER_SAFE_DATA = ["firstName", "lastName", "age", "gender", "photoUrl","height","createdAt","education", "occupation",
+    "belief",
+    "lookingFor",
+    "drinking",
+    "smoking",
+    "diet",
+    "languages",
+    "sports",
+    "travelPreferences",
+    "pets", ];
 
 /**
  * GET /user/requests/received
  */
-userRouter.get('/user/requests/received', userAuth, async (req, res) => {
-    try {
-        const loggedInUser = req.user;
+// Example route in your backend
+userRouter.get("/user/requests/received", userAuth, async (req, res) => {
+  try {
+    const loggedInUser = req.user._id; // however you get the logged-in user
+    //console.log(loggedInUser);
+    
+    
+    const requests = await ConnectionRequest.find({  
+  touserId: loggedInUser._id,
+  status: "like"   // ✅ only fetch liked ones
+})
+.populate("fromuserId", "firstName lastName age gender photoUrl about")
+.lean();
 
-        // Find all requests where current user is the target
-        const connectionRequest = await ConnectionRequest.find({
-            touserId: loggedInUser._id,
-            status: "like"
-        })
-        // Populate sender details with safe fields only
-        .populate("fromuserId", USER_SAFE_DATA);
 
-        res.json({
-            message: "Data fetched successfully",
-            data: connectionRequest
-        });
+    // ✅ Filter out requests where fromuserId is null
+    const validRequests = requests.filter((req) => req.fromuserId !== null);
 
-    } catch (err) {
-        res.status(400).send("ERROR: " + err.message);
-    }
+    res.json({ data: validRequests });
+  } catch (err) {
+    console.error("Error fetching requests:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
 });
+
 
 /**
  * GET /user/connections
@@ -84,7 +97,7 @@ userRouter.get('/feed', userAuth, async (req, res) => {
     try {
         const loggedInUser = req.user;
 
-        let limit = parseInt(req.query.limit) || 10;
+        let limit = parseInt(req.query.limit) || 4;
         const page = parseInt(req.query.page) || 1;
         const skip = (page - 1 ) * limit;
         limit = limit > 50 ? 50 : limit;

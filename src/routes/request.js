@@ -6,6 +6,9 @@ const User = require('../models/user.js');
 
 const requestRouter = express.Router();
 
+/**
+ * POST /request/send/:status/:touserId
+ */
 requestRouter.post(
   '/request/send/:status/:touserId',
   userAuth,
@@ -16,7 +19,6 @@ requestRouter.post(
       const status = req.params.status;
 
       const allowedStatus = ['like', 'pass'];
-
       if (!allowedStatus.includes(status)) {
         return res.status(400).json({ message: `Invalid status ${status}` });
       }
@@ -30,6 +32,7 @@ requestRouter.post(
         return res.status(400).json({ message: `User Not Found` });
       }
 
+      // Prevent duplicate requests
       const existingConnectionRequest = await ConnectionRequest.findOne({
         $or: [
           { fromuserId, touserId },
@@ -63,40 +66,45 @@ requestRouter.post(
   }
 );
 
+/**
+ * POST /request/review/:status/:requestId
+ */
 requestRouter.post(
-    '/request/review/:status/:requestId',
-    userAuth,
-    async (req, res) => {
-        try {
-            const loggedInUser = req.user
+  '/request/review/:status/:requestId',
+  userAuth,
+  async (req, res) => {
+    try {
+      const loggedInUser = req.user;
+      const { status, requestId } = req.params;
 
-            const { status, requestId } = req.params
+      const allowedStatus = ["accepted", "rejected"];
+      if (!allowedStatus.includes(status)) {
+        return res.status(400).json({ message: `this type of status '${status}' is not allowed` });
+      }
 
-            const allowedStatus = ["accepted", "rejected"];
-            if(!allowedStatus.includes(status)) return res.status(400).json({ message: `this type of status '${status}' is not allowed`});
+      // Find only LIKE requests that belong to the logged-in user
+      const connectionRequest = await ConnectionRequest.findOne({
+        _id: requestId,
+        touserId: loggedInUser._id,
+        status: "like"
+      });
 
-            const connectionRequest = await ConnectionRequest.findOne({
-                _id: requestId,
-                touserId: loggedInUser._id,
-                status: "like" 
-            })
-            
-            if(!connectionRequest) return res.status(404).json({ message: `Connection request not found`});
+      if (!connectionRequest) {
+        return res.status(404).json({ message: `Connection request not found` });
+      }
 
-            connectionRequest.status = status;
+      connectionRequest.status = status;
+      const data = await connectionRequest.save();
 
-            const data = await connectionRequest.save();
+      res.json({
+        message: `Status updated successfully → ${status}`,
+        data
+      });
 
-            res.json({
-                'messsage': 'Status Updated Successfullly'+ status, 
-                data
-            });
-                
-
-        } catch (error) {
-            res.status(400).send('ERROR : ' +error.message)
-        }
+    } catch (error) {
+      res.status(400).send('ERROR : ' + error.message);
     }
-)
+  }
+);
 
 module.exports = requestRouter;
