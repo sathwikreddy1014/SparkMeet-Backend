@@ -7,6 +7,9 @@ const userRouter = express.Router();
 // Only expose safe fields from User to the client
 const USER_SAFE_DATA = ["firstName", "lastName", "age", "gender", "photoUrl","height","createdAt","education", "occupation",
     "belief",
+    "preferredAgemin",
+    "preferredAgemax",
+    "distancePreference",
     "lookingFor",
     "drinking",
     "smoking",
@@ -94,43 +97,76 @@ module.exports = userRouter;
  * GET /feed
  */
 userRouter.get('/feed', userAuth, async (req, res) => {
-    try {
-        const loggedInUser = req.user;
+  try {
+    const loggedInUser = req.user;
 
-        let limit = parseInt(req.query.limit) || 4;
-        const page = parseInt(req.query.page) || 1;
-        const skip = (page - 1 ) * limit;
-        limit = limit > 50 ? 50 : limit;
-        // Find all requests where current user is involved
-        const connectionRequests = await ConnectionRequest.find({
-            $or: [
-                { fromuserId: loggedInUser._id },
-                { touserId: loggedInUser._id }
-            ]
-        }).select("fromuserId touserId");
+    let limit = parseInt(req.query.limit) || 10;
+    const page = parseInt(req.query.page) || 1;
+    const skip = (page - 1) * limit;
+    limit = limit > 50 ? 50 : limit;
 
-        // Collect userIds that should be hidden from feed
-        const hideUsersFromFeed = new Set();
-        connectionRequests.forEach(request => {
-            hideUsersFromFeed.add(request.fromuserId.toString());
-            hideUsersFromFeed.add(request.touserId.toString());
-        });
+    // Find all requests where current user is involved
+    const connectionRequests = await ConnectionRequest.find({
+      $or: [
+        { fromuserId: loggedInUser._id },
+        { touserId: loggedInUser._id }
+      ]
+    }).select("fromuserId touserId");
 
-        // Also hide the logged-in user themselves
-        hideUsersFromFeed.add(loggedInUser._id.toString());
+    // Collect userIds that should be hidden from feed
+    const hideUsersFromFeed = new Set();
+    connectionRequests.forEach(request => {
+      hideUsersFromFeed.add(request.fromuserId.toString());
+      hideUsersFromFeed.add(request.touserId.toString());
+    });
+    hideUsersFromFeed.add(loggedInUser._id.toString());
 
-        // Fetch all users excluding the above list
-        const users = await User.find({
-            _id: { $nin: Array.from(hideUsersFromFeed) }
-        }).select(USER_SAFE_DATA).skip(skip).limit(limit);
+    // Base candidate pool
+    const candidates = await User.find({
+      _id: { $nin: Array.from(hideUsersFromFeed) },
+    }).select(USER_SAFE_DATA);
 
-        res.status(200).json({ success: true, length : users.length ,data:users });
+    // Scoring function
+    const overlap = (arr1, arr2) => {
+      if (!arr1 || !arr2) return 0;
+      return arr1.filter(item => arr2.includes(item)).length;
+    };
 
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ success: false, message: err.message });
-    }
+    const scored = candidates.map(candidate => {
+      let score = 0;
+
+      score += overlap(loggedInUser.hobbies, candidate.hobbies) * 2;
+      score += overlap(loggedInUser.favoriteMovies, candidate.favoriteMovies);
+      score += overlap(loggedInUser.favoriteMusic, candidate.favoriteMusic);
+      score += overlap(loggedInUser.sports, candidate.sports);
+      score += overlap(loggedInUser.travelPreferences, candidate.travelPreferences);
+
+      if (loggedInUser.drinking.toString() === candidate.drinking.toString()) score += 2;
+      if (loggedInUser.smoking.toString() === candidate.smoking.toString()) score += 2;
+      if (loggedInUser.diet.toString() === candidate.diet.toString()) score += 2;
+
+      return { candidate, score };
+    });
+
+    // Sort by score (highest first)
+    scored.sort((a, b) => b.score - a.score);
+
+    // Apply pagination
+    const paged = scored.slice(skip, skip + limit);
+
+    res.status(200).json({
+      success: true,
+      message:"Your Daily profiles has been completed",
+      length: paged.length,
+      data: paged.map(item => ({ ...item.candidate._doc, matchScore: item.score }))
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: err.message });
+  }
 });
+
 
 
 

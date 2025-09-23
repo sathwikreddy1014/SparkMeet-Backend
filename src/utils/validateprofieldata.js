@@ -15,7 +15,8 @@ const validateProfileData = (req) => {
     "beliefs",
     "languages",
     "lookingFor",
-    "preferredAge",
+     "preferredAgemin",
+    "preferredAgemax",
     "distancePreference",
     "hobbies",
     "favoriteMovies",
@@ -49,12 +50,19 @@ const validateProfileData = (req) => {
 }
 
 
-  if (req.body.preferredAge) {
-    const { min, max } = req.body.preferredAge;
-    if (min && max && min > max) {
-      return { valid: false, message: "Preferred age min cannot be greater than max." };
-    }
+if (req.body.preferredAgemin !== undefined && req.body.preferredAgemax !== undefined) {
+  const min = req.body.preferredAgemin;
+  const max = req.body.preferredAgemax;
+
+  if (min > max) {
+    return { valid: false, message: "Preferred age min cannot be greater than max." };
   }
+
+  if (min < 18 || max > 100) {
+    return { valid: false, message: "Preferred age must be between 18 and 100." };
+  }
+}
+
 
   return { valid: true };
 };

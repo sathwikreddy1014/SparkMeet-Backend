@@ -21,10 +21,8 @@ const userSchema = new mongoose.Schema(
     beliefs: { type: String, trim: true, default: "" },
     languages: { type: [String], default: [] },
     lookingFor: { type: String, trim: true, default: "" },
-    preferredAge: {
-      min: { type: Number, min: 18, max: 100, default: 18 },
-      max: { type: Number, min: 18, max: 100, default: 30 },
-    },
+    preferredAgemin: {type: Number, min: 18, max: 100, default: 18 },
+    preferredAgemax: { type: Number, min: 18, max: 100, default: 30 },
     distancePreference: { type: Number, min: 0, max: 1000, default: 0 },
     hobbies: { type: [String], default: [] },
     favoriteMovies: { type: [String], default: [] },
@@ -35,6 +33,11 @@ const userSchema = new mongoose.Schema(
     drinking: { type: [String], trim: true, default: "" },
     smoking: { type: [String], trim: true, default: "" },
     diet: { type: [String], trim: true, default: "" },
+    dailyFeed: {
+  date: { type: Date, default: null },
+  count: { type: Number, default: 0 }
+}
+
   },
   { timestamps: true }
 );
