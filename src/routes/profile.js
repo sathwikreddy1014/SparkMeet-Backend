@@ -21,25 +21,26 @@ profileRouter.get('/profile/view', userAuth, async (req, res) => {
         res.status(500).json({ success: false, message: err.message });
     }
 });
+
 //=== PROFILE EDIT ===//
 profileRouter.patch("/profile/edit", userAuth, async (req, res) => {
   try {
-    const updates = req.body;
+    const validateProfileData = req.body;
 
     // remove empty/null fields so they don’t overwrite
-    Object.keys(updates).forEach((key) => {
+    Object.keys(validateProfileData).forEach((key) => {
       if (
-        updates[key] === null ||
-        updates[key] === "" ||
-        (Array.isArray(updates[key]) && updates[key].length === 0)
+        validateProfileData[key] === null ||
+        validateProfileData[key] === "" ||
+        (Array.isArray(validateProfileData[key]) && validateProfileData[key].length === 0)
       ) {
-        delete updates[key];
+        delete validateProfileData[key];
       }
     });
 
     const updatedUser = await User.findByIdAndUpdate(
       req.user._id, // user from token
-      { $set: updates },
+      { $set: validateProfileData },
       { new: true, runValidators: true }
     );
 
@@ -49,7 +50,6 @@ profileRouter.patch("/profile/edit", userAuth, async (req, res) => {
     res.status(500).json({ success: false, message: "Server error", error: err.message });
   }
 }); 
-
 
 //=== PASWWORD EDIT ===//
 profileRouter.patch('/profile/password', userAuth, async (req, res) => {
@@ -69,6 +69,7 @@ profileRouter.patch('/profile/password', userAuth, async (req, res) => {
         res.status(400).json({ error: err.message });
     }
 });
+
 //=== FORGET PASSWORD ===//
 profileRouter.post('/forgot-password', async (req, res) => {
   try {
@@ -137,6 +138,7 @@ profileRouter.post("/verify-reset-code", async (req, res) => {
   res.cookie("resetToken", emailId, { httpOnly: true, sameSite: "strict", maxAge: 5 * 60 * 1000 });
   res.json({ message: "Code verified" });
 });
+
 //  Reset Password
 profileRouter.post("/reset-password", async (req, res) => {
   try {
@@ -172,7 +174,6 @@ profileRouter.post("/reset-password", async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 });
-
 
 
 module.exports = profileRouter;

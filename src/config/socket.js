@@ -1,11 +1,10 @@
-// socket.js
-const  { Server } = require("socket.io");
-const Message = require( "./models/Message.js");
+const { Server } = require("socket.io");
+const Message = require("./models/Message.js");
 
-export default function setupSocket(server) {
+function setupSocket(server) {
   const io = new Server(server, {
     cors: {
-      origin: "http://localhost:5173", // frontend
+      origin: process.env.FRONTEND_ORIGIN,
       credentials: true,
     },
   });
@@ -18,8 +17,17 @@ export default function setupSocket(server) {
     });
 
     socket.on("sendMessage", async ({ roomId, senderId, text }) => {
-      const message = await Message.create({ chatRoom: roomId, sender: senderId, text });
-      io.to(roomId).emit("newMessage", message);
+      try {
+        const message = await Message.create({
+          chatRoom: roomId,
+          sender: senderId,
+          text,
+        });
+        io.to(roomId).emit("newMessage", message);
+      } catch (err) {
+        console.error("Error saving message:", err);
+        socket.emit("errorMessage", "Failed to send message.");
+      }
     });
 
     socket.on("disconnect", () => {
@@ -27,3 +35,5 @@ export default function setupSocket(server) {
     });
   });
 }
+
+module.exports = setupSocket;

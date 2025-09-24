@@ -12,7 +12,7 @@ const chatrouter = require("./routes/chatRoutes");
 const app = express();
 
 const allowedOrigins = [
-  "http://localhost:5173"
+  process.env.FRONTEND_ORIGIN
 ];
 
 app.use(cors({
