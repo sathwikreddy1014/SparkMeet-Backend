@@ -8,7 +8,7 @@ const userSchema = new mongoose.Schema(
     lastName: { type: String, required: true, trim: true, minlength: 2, maxlength: 50 },
     emailId: { type: String, required: true, unique: true, lowercase: true, trim: true },
     password: { type: String, required: true, trim: true, minlength: 8 },
-    photoUrl: { type: String, trim: true, default: ""},
+    photoUrl: { type: [String], default: []},
     age: { type: Number, min: 18, max: 100 },
     gender: { type: String, trim: true, lowercase: true }, // removed enum
     about: { type: String, maxlength: 500, default: "" },

@@ -1,100 +1,101 @@
 const express = require("express");
 const { validateSignupData } = require("../utils/validatesignup");
 const User = require("../models/user");
+const ApiError = require("../utils/ApiError");
+const ApiResponse = require("../utils/apiresponse");
 
 const authRouter = express.Router();
 
 // === SIGNUP ===
-authRouter.post("/signup", async (req, res) => {
+authRouter.post("/signup", async (req, res, next) => {
   try {
-    // Validate request
     validateSignupData(req);
 
     const { password, firstName, lastName, emailId, age, gender } = req.body;
 
-    // Check if user already exists
     const existingUser = await User.findOne({ emailId });
     if (existingUser) {
-      return res
-        .status(400)
-        .json({ error: "User already exists with this email." });
+      throw new ApiError(400, "User already exists with this email.");
     }
 
-    // Create new user
     const user = new User({
       firstName,
       lastName,
       emailId,
-      password, // will be hashed in pre-save hook
+      password,
       age,
       gender,
     });
 
     const savedUser = await user.save();
 
-     // Generate JWT
     const token = savedUser.generateJWT();
 
-    // Set cookie
     res.cookie("token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
-      maxAge: 24 * 60 * 60 * 1000, // 1 day
+      maxAge: 24 * 60 * 60 * 1000,
     });
 
-    res
-      .status(201).json({message: "SignedUp Sucessfully ", data: savedUser})
+    return res
+      .status(201)
+      .json(new ApiResponse(201, savedUser, "Signed up successfully"));
   } catch (err) {
-    res.status(400).json({ error: "Signup error: " + err.message });
+    next(err);
   }
 });
 
 // === LOGIN ===
-authRouter.post("/login", async (req, res) => {
+authRouter.post("/login", async (req, res, next) => {
   try {
     const { emailId, password } = req.body;
-    
+
     const userOne = await User.findOne({ emailId });
     if (!userOne) {
-      return res.status(401).json({ error: "INVALID EMAIL OR PASSWORD." });
+      throw new ApiError(401, "Invalid email or password");
     }
 
-    // Verify password
     const isPasswordValid = await userOne.verifyPassword(password);
     if (!isPasswordValid) {
-      return res.status(401).json({ error: "INVALID EMAIL OR PASSWORD." });
+      throw new ApiError(401, "Invalid email or password");
     }
 
-    // Generate JWT
     const token = userOne.generateJWT();
 
-    // Set cookie
     res.cookie("token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
-      maxAge: 24 * 60 * 60 * 1000, // 1 day
+      maxAge: 24 * 60 * 60 * 1000,
     });
 
-    // Prepare safe user object
     const user = userOne.toObject();
     delete user.password;
 
-    res.json({ data: user , message: "Login successful" });
+    return res
+      .status(200)
+      .json(new ApiResponse(200, user, "Login successful"));
   } catch (err) {
-    res.status(500).json({ error: "Login error: " + err.message });
+    next(err);
   }
 });
 
 // === LOGOUT ===
-authRouter.post("/logout", (req, res) => {
-  res.cookie("token", null, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "strict",
-  });
-  res.status(200).json({ message: "Logged out successfully." });
+authRouter.post("/logout", (req, res, next) => {
+  try {
+    res.cookie("token", null, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+    });
+
+    return res
+      .status(200)
+      .json(new ApiResponse(200, null, "Logged out successfully"));
+  } catch (err) {
+    next(err);
+  }
 });
 
 module.exports = authRouter;
