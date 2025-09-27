@@ -7,7 +7,7 @@ const nodemailer = require('nodemailer');
 const User = require('../models/user.js');
 const ApiError = require("../utils/ApiError.js");
 const ApiResponse = require("../utils/ApiResponse.js");
-const uploadOnCloudinary = require('../utils/cloudinary.js'); // CommonJS version
+const { uploadOnCloudinary, deleteFromCloudinary } = require("../utils/cloudinary.js");
 
 const profileRouter = express.Router();
 
@@ -46,16 +46,15 @@ profileRouter.get('/profile/view', userAuth, async (req, res, next) => {
   }
 });
 
-// === PROFILE EDIT WITH IMAGE UPLOAD ===
+// PATCH - Update profile info (without photos)
 profileRouter.patch(
   "/profile/edit",
   userAuth,
-  upload.array("images", 6),
   async (req, res, next) => {
     try {
       const updateData = req.body;
 
-      // Remove empty/null fields
+      // Clean empty fields
       Object.keys(updateData).forEach((key) => {
         if (
           updateData[key] === null ||
@@ -66,26 +65,9 @@ profileRouter.patch(
         }
       });
 
-      // Upload images to Cloudinary
-      let uploadedUrls = [];
-      if (req.files?.length > 0) {
-        for (const file of req.files) {
-          const uploaded = await uploadOnCloudinary(file.path);
-          if (uploaded?.secure_url) uploadedUrls.push(uploaded.secure_url);
-        }
-      }
-
-      // Build update query
-      const updateQuery = { $set: updateData };
-      if (uploadedUrls.length > 0) {
-        // Ensure photoUrl is always an array
-        updateQuery.$push = { photoUrl: { $each: uploadedUrls } };
-      }
-
-      // Update user
       const updatedUser = await User.findByIdAndUpdate(
         req.user._id,
-        updateQuery,
+        { $set: updateData },
         { new: true, runValidators: true }
       );
 
@@ -97,6 +79,68 @@ profileRouter.patch(
     }
   }
 );
+
+// POST - Upload new photos and push them into DB
+profileRouter.post(
+  "/profile/upload-photos",
+  userAuth,
+  upload.array("images", 6),
+  async (req, res, next) => {
+    try {
+      if (!req.files || req.files.length === 0) {
+        return res.status(400).json({ message: "No files uploaded" });
+      }
+
+      const uploadedUrls = [];
+      for (const file of req.files) {
+        const uploadedImageUrl = await uploadOnCloudinary(file.path);
+        if (uploadedImageUrl?.secure_url) {
+          uploadedUrls.push(uploadedImageUrl.secure_url);
+        }
+      }
+
+      // ✅ Push all new URLs into user's photoUrl array
+      const updatedUser = await User.findByIdAndUpdate(
+        req.user.id,
+        { $push: { photoUrl: { $each: uploadedUrls } } }, // <-- use $each
+        { new: true }
+      );
+
+      res.json(new ApiResponse(200, updatedUser, "Photos uploaded successfully"));
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+// DELETE - Remove one photo
+profileRouter.delete(
+  "/profile/remove-photo",
+  userAuth,
+  async (req, res, next) => {
+    try {
+      const { url } = req.body;
+      if (!url) return next(new ApiError(400, "No photo URL provided"));
+
+      // Remove from Cloudinary
+      await deleteFromCloudinary(url);
+
+      // Pull from MongoDB
+      const updatedUser = await User.findByIdAndUpdate(
+        req.user._id,
+        { $pull: { photoUrl: url } },
+        { new: true }
+      );
+
+      res.json(new ApiResponse(200, updatedUser, "Photo removed successfully"));
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+
+
 
 // === PASSWORD EDIT ===
 profileRouter.patch('/profile/password', userAuth, async (req, res, next) => {
