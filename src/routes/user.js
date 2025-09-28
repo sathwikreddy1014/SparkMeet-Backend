@@ -26,7 +26,7 @@ userRouter.get("/user/requests/received", userAuth, async (req, res, next) => {
       touserId: loggedInUser,
       status: "like"
     })
-    .populate("fromuserId", "firstName lastName age gender photoUrl about")
+    .populate("fromuserId", "firstName lastName age gender photoUrl  location height education occupation beliefs languages lookingFor  hobbies favoriteMovies favoriteMusic sports travelPreferences pets drinking smoking diet")
     .lean();
 
     const validRequests = requests.filter(req => req.fromuserId !== null);
