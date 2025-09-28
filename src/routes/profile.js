@@ -6,7 +6,7 @@ const PasswordReset = require('../models/passwordReset.js');
 const nodemailer = require('nodemailer');
 const User = require('../models/user.js');
 const ApiError = require("../utils/ApiError.js");
-const ApiResponse = require("../utils/ApiResponse.js");
+
 const { uploadOnCloudinary, deleteFromCloudinary } = require("../utils/cloudinary.js");
 
 const profileRouter = express.Router();
@@ -14,6 +14,7 @@ const profileRouter = express.Router();
 
 const fs = require("fs");
 const path = require("path");
+const ApiResponse = require('../utils/apiresponse.js');
 
 const uploadDir = path.join(__dirname, "..", "uploads");
 if (!fs.existsSync(uploadDir)) {
@@ -46,86 +47,61 @@ profileRouter.get('/profile/view', userAuth, async (req, res, next) => {
   }
 });
 
-// PATCH - Update profile info (without photos)
+// ✅ Create or Update Profile (details + photos)
 profileRouter.patch(
   "/profile/edit",
-  userAuth,
-  async (req, res, next) => {
-    try {
-      const updateData = req.body;
-
-      // Clean empty fields
-      Object.keys(updateData).forEach((key) => {
-        if (
-          updateData[key] === null ||
-          updateData[key] === "" ||
-          (Array.isArray(updateData[key]) && updateData[key].length === 0)
-        ) {
-          delete updateData[key];
-        }
-      });
-
-      const updatedUser = await User.findByIdAndUpdate(
-        req.user._id,
-        { $set: updateData },
-        { new: true, runValidators: true }
-      );
-
-      if (!updatedUser) return next(new ApiError(404, "User not found"));
-
-      res.json(new ApiResponse(200, updatedUser, "Profile updated successfully"));
-    } catch (err) {
-      next(err);
-    }
-  }
-);
-
-// POST - Upload new photos and push them into DB
-profileRouter.post(
-  "/profile/upload-photos",
   userAuth,
   upload.array("images", 6),
   async (req, res, next) => {
     try {
-      if (!req.files || req.files.length === 0) {
-        return res.status(400).json({ message: "No files uploaded" });
-      }
+      const updateData = req.body;
+      Object.keys(updateData).forEach((key) => {
+        if (!updateData[key] || (Array.isArray(updateData[key]) && updateData[key].length === 0)) {
+          delete updateData[key];
+        }
+      });
 
-      const uploadedUrls = [];
-      for (const file of req.files) {
-        const uploadedImageUrl = await uploadOnCloudinary(file.path);
-        if (uploadedImageUrl?.secure_url) {
-          uploadedUrls.push(uploadedImageUrl.secure_url);
+      // Handle image uploads
+      let uploadedUrls = [];
+      if (req.files && req.files.length > 0) {
+        for (const file of req.files) {
+          const uploaded = await uploadOnCloudinary(file.path);
+          if (uploaded?.secure_url) uploadedUrls.push(uploaded.secure_url);
         }
       }
 
-      // ✅ Push all new URLs into user's photoUrl array
-      const updatedUser = await User.findByIdAndUpdate(
-        req.user.id,
-        { $push: { photoUrl: { $each: uploadedUrls } } }, // <-- use $each
-        { new: true }
-      );
+      // Merge with existing photos, limit total 6
+      const totalPhotos = (req.user.photoUrl || []).concat(uploadedUrls).slice(0, 6);
 
-      res.json(new ApiResponse(200, updatedUser, "Photos uploaded successfully"));
+const updatedUser = await User.findByIdAndUpdate(
+  req.user._id,
+  { $set: { ...updateData, photoUrl: totalPhotos } },
+  { new: true, runValidators: true }
+);
+
+
+      res.json(new ApiResponse(200, updatedUser, "Profile saved successfully"));
     } catch (err) {
       next(err);
     }
   }
 );
 
-// DELETE - Remove one photo
+
+
+// ✅ Remove one photo (like Tinder delete)
 profileRouter.delete(
-  "/profile/remove-photo",
+  "/profile/photo",
   userAuth,
   async (req, res, next) => {
     try {
       const { url } = req.body;
       if (!url) return next(new ApiError(400, "No photo URL provided"));
 
-      // Remove from Cloudinary
+      // Delete from Cloudinary
       await deleteFromCloudinary(url);
 
-      // Pull from MongoDB
+      // Remove from DB
       const updatedUser = await User.findByIdAndUpdate(
         req.user._id,
         { $pull: { photoUrl: url } },
@@ -138,6 +114,7 @@ profileRouter.delete(
     }
   }
 );
+
 
 
 

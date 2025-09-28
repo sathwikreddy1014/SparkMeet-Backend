@@ -23,27 +23,12 @@ const uploadOnCloudinary = async (localFilePath) => {
 // Delete function
 const deleteFromCloudinary = async (public_id) => {
   try {
-    if (!public_id) {
-      console.log("No public_id provided!");
-      return;
-    }
-
-    const result = await cloudinary.uploader.destroy(public_id);
-
-    if (result.result === 'ok') {
-      console.log("Image deleted successfully!");
-    } else if (result.result === 'not found') {
-      console.log("Image not found or already deleted.");
-    } else {
-      console.log("Deletion result:", result);
-    }
-
-    return result;
-
-  } catch (error) {
-    console.error("Error deleting image from Cloudinary:", error);
+    if (!public_id) return;
+    return await cloudinary.uploader.destroy(public_id);
+  } catch {
     return null;
   }
 };
+
 
 module.exports = { uploadOnCloudinary, deleteFromCloudinary };

@@ -10,8 +10,6 @@ function setupSocket(server) {
   });
 
   io.on("connection", (socket) => {
-    console.log("User connected:", socket.id);
-
     socket.on("joinRoom", (roomId) => {
       socket.join(roomId);
     });
@@ -24,14 +22,13 @@ function setupSocket(server) {
           text,
         });
         io.to(roomId).emit("newMessage", message);
-      } catch (err) {
-        console.error("Error saving message:", err);
+      } catch {
         socket.emit("errorMessage", "Failed to send message.");
       }
     });
 
     socket.on("disconnect", () => {
-      console.log("User disconnected:", socket.id);
+      // optional: handle disconnect logic silently
     });
   });
 }

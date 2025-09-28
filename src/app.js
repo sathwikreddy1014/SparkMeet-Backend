@@ -49,11 +49,9 @@ app.use(errorHandler);
 
 connectDB()
   .then(() => {
-    console.log("MongoDB connection successful");
-    app.listen(process.env.PORT || 3000, () => {
-      console.log(`Server started on port ${process.env.PORT || 3000}`);
-    });
+    app.listen(process.env.PORT || 3000);
   })
   .catch((err) => {
-    console.error("MongoDB connection failed: " + err.message);
+    // handle error silently or with custom logic
   });
+
