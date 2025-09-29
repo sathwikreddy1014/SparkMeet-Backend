@@ -37,7 +37,7 @@ const upload = multer({
 });
 
 // === PROFILE VIEW ===
-profileRouter.get('/profile/view', userAuth, async (req, res, next) => {
+profileRouter.get('/api/profile/profile/view', userAuth, async (req, res, next) => {
   try {
     const user = req.user.toObject();
     delete user.password; // Remove sensitive field
@@ -49,7 +49,7 @@ profileRouter.get('/profile/view', userAuth, async (req, res, next) => {
 
 // ✅ Create or Update Profile (details + photos)
 profileRouter.patch(
-  "/profile/edit",
+  "/api/profile/profile/edit",
   userAuth,
   upload.array("images", 6),
   async (req, res, next) => {
@@ -91,7 +91,7 @@ const updatedUser = await User.findByIdAndUpdate(
 
 // ✅ Remove one photo (like Tinder delete)
 profileRouter.delete(
-  "/profile/photo",
+  "/api/profile/profile/photo",
   userAuth,
   async (req, res, next) => {
     try {
@@ -120,7 +120,7 @@ profileRouter.delete(
 
 
 // === PASSWORD EDIT ===
-profileRouter.patch('/profile/password', userAuth, async (req, res, next) => {
+profileRouter.patch('/api/profile/password', userAuth, async (req, res, next) => {
   try {
     await validatePassword(req);
     const currentUser = req.user;
@@ -146,7 +146,7 @@ profileRouter.patch('/profile/password', userAuth, async (req, res, next) => {
 });
 
 // === FORGOT PASSWORD ===
-profileRouter.post('/forgot-password', async (req, res, next) => {
+profileRouter.post('/api/profile/forgot-password', async (req, res, next) => {
   try {
     const { emailId } = req.body;
     const user = await User.findOne({ emailId });
@@ -184,7 +184,7 @@ profileRouter.post('/forgot-password', async (req, res, next) => {
 });
 
 // === VERIFY RESET CODE ===
-profileRouter.post("/verify-reset-code", async (req, res, next) => {
+profileRouter.post("/api/profile/verify-reset-code", async (req, res, next) => {
   try {
     const { emailId, otp } = req.body;
     const record = await PasswordReset.findOne({ emailId, otp });
@@ -207,7 +207,7 @@ profileRouter.post("/verify-reset-code", async (req, res, next) => {
 });
 
 // === RESET PASSWORD ===
-profileRouter.post("/reset-password", async (req, res, next) => {
+profileRouter.post("/api/profile/reset-password", async (req, res, next) => {
   try {
     const { newPassword } = req.body;
 

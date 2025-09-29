@@ -7,7 +7,7 @@ const ApiResponse = require("../utils/ApiResponse");
 const authRouter = express.Router();
 
 // === SIGNUP ===
-authRouter.post("/signup", async (req, res, next) => {
+authRouter.post("/api/auth/signup", async (req, res, next) => {
   try {
     validateSignupData(req);
 
@@ -47,7 +47,7 @@ authRouter.post("/signup", async (req, res, next) => {
 });
 
 // === LOGIN ===
-authRouter.post("/login", async (req, res, next) => {
+authRouter.post("/api/auth/login", async (req, res, next) => {
   try {
     const { emailId, password } = req.body;
 
@@ -82,7 +82,7 @@ authRouter.post("/login", async (req, res, next) => {
 });
 
 // === LOGOUT ===
-authRouter.post("/logout", (req, res, next) => {
+authRouter.post("/api/auth/logout", (req, res, next) => {
   try {
     res.cookie("token", null, {
       httpOnly: true,
