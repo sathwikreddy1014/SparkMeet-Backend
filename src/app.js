@@ -1,8 +1,9 @@
+// src/app.js
 const express = require("express");
 require("dotenv").config();
-const { connectDB } = require("./config/database");
 const cookieParser = require("cookie-parser");
 const cors = require("cors");
+const { connectDB } = require("./config/database");
 
 // Routers
 const authRouter = require("./routes/auth");
@@ -17,8 +18,8 @@ const ApiError = require("./utils/apiError");
 
 const app = express();
 
-// CORS
-const allowedOrigins = [process.env.FRONTEND_ORIGIN];
+// ✅ CORS setup
+const allowedOrigins = [process.env.FRONTEND_ORIGIN]; // e.g., https://your-frontend.com
 app.use(
   cors({
     origin: (origin, callback) => {
@@ -29,25 +30,31 @@ app.use(
   })
 );
 
+// ✅ Body parser & cookies
 app.use(express.json());
 app.use(cookieParser());
 
-// Routes with prefixes
+// ✅ Test endpoint
+app.get("/api/test", (req, res) => {
+  res.json({ success: true, message: "Backend is working!" });
+});
+
+// ✅ API Routes with prefixes
 app.use("/api/auth", authRouter);
 app.use("/api/profile", profileRouter);
 app.use("/api/request", requestRouter);
 app.use("/api/users", userRouter);
 app.use("/api/chat", chatRouter);
 
-// 404 handler
+// ✅ 404 handler (must be after all routes)
 app.use((req, res, next) => {
   next(new ApiError(404, "Route not found"));
 });
 
-// Global error handler
+// ✅ Global error handler (last middleware)
 app.use(errorHandler);
 
-// Connect DB + Start server
+// ✅ Connect DB + start server
 connectDB()
   .then(() => {
     const PORT = process.env.PORT || 3000;
