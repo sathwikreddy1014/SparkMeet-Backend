@@ -43,8 +43,9 @@ app.get("/api/test", (req, res) => {
 app.use("/api/auth", authRouter);
 app.use("/api/profile", profileRouter);
 app.use("/api/request", requestRouter);
-app.use("/api/users", userRouter);
+app.use("/api/user", userRouter);
 app.use("/api/chat", chatRouter);
+
 
 // ✅ 404 handler (must be after all routes)
 app.use((req, res, next) => {
