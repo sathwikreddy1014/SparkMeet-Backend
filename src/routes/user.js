@@ -2,7 +2,7 @@ const express = require('express');
 const { userAuth } = require('../middlewares/adminAuth');
 const ConnectionRequest = require('../models/connectionRequest');
 const User = require('../models/user');
-const ApiError = require("../utils/ApiError");
+const ApiError = require("../utils/apiError.js");
 const ApiResponse = require("../utils/ApiResponse");
 
 const userRouter = express.Router();

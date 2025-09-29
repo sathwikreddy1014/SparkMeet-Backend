@@ -1,7 +1,7 @@
 const express = require("express");
 const { validateSignupData } = require("../utils/validatesignup");
 const User = require("../models/user");
-const ApiError = require("../utils/apiError");
+const ApiError = require("../utils/apiError.js");
 const ApiResponse = require("../utils/ApiResponse");
 
 const authRouter = express.Router();

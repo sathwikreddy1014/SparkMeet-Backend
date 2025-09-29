@@ -11,7 +11,7 @@ const userRouter = require("./routes/user");
 const chatrouter = require("./routes/chatRoutes");
 
 const errorHandler = require("./utils/errorHandler"); // ✅ import
-const ApiError = require("./utils/ApiError");              // ✅ import
+const ApiError = require("./utils/apiError.js");              // ✅ import
 
 const app = express();
 
