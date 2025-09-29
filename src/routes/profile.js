@@ -5,7 +5,7 @@ const { validatePassword } = require('../utils/validatepassword.js');
 const PasswordReset = require('../models/passwordReset.js');
 const nodemailer = require('nodemailer');
 const User = require('../models/user.js');
-const ApiError = require("../utils/ApiError.js");
+const ApiError = require("../utils/apiError.js");
 
 const { uploadOnCloudinary, deleteFromCloudinary } = require("../utils/cloudinary.js");
 
@@ -14,7 +14,7 @@ const profileRouter = express.Router();
 
 const fs = require("fs");
 const path = require("path");
-const ApiResponse = require('../utils/apiresponse.js');
+const ApiResponse = require('../utils/ApiResponse.js');
 
 const uploadDir = path.join(__dirname, "..", "uploads");
 if (!fs.existsSync(uploadDir)) {

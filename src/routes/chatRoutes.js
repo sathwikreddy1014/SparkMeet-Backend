@@ -2,7 +2,7 @@ const express = require("express");
 const ChatRoom = require("../models/chatroom.js");
 const Message = require("../models/message.js");
 const { userAuth } = require("../middlewares/adminAuth.js");
-const ApiError = require("../utils/ApiError");
+const ApiError = require("../utils/apiError.js");
 
 const chatrouter = express.Router();
 

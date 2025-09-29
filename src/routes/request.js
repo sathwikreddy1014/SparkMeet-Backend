@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const { userAuth } = require("../middlewares/adminAuth.js");
 const ConnectionRequest = require('../models/connectionRequest.js');
 const User = require('../models/user.js');
-const ApiError = require("../utils/ApiError.js");
+const ApiError = require("../utils/apiError.js");
 const ApiResponse = require("../utils/ApiResponse.js");
 
 const requestRouter = express.Router();
