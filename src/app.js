@@ -4,17 +4,20 @@ const { connectDB } = require("./config/database");
 const cookieParser = require("cookie-parser");
 const cors = require("cors");
 
+// Routers
 const authRouter = require("./routes/auth");
 const profileRouter = require("./routes/profile");
 const requestRouter = require("./routes/request");
 const userRouter = require("./routes/user");
-const chatrouter = require("./routes/chatRoutes");
+const chatRouter = require("./routes/chatRoutes");
 
-const errorHandler = require("./utils/errorHandler"); // ✅ import
-const ApiError = require("./utils/apiError.js");              // ✅ import
+// Utils
+const errorHandler = require("./utils/errorHandler");
+const ApiError = require("./utils/apiError"); // ⚠️ Make sure filename matches exactly (case-sensitive!)
 
 const app = express();
 
+// ✅ Allowed origins (make sure FRONTEND_ORIGIN is set in Render Dashboard)
 const allowedOrigins = [process.env.FRONTEND_ORIGIN];
 
 app.use(
@@ -29,29 +32,33 @@ app.use(
     credentials: true,
   })
 );
+
 app.use(express.json());
 app.use(cookieParser());
 
-// Routes
+// ✅ Routes
 app.use("/", authRouter);
 app.use("/", profileRouter);
 app.use("/", requestRouter);
 app.use("/", userRouter);
-app.use("/", chatrouter);
+app.use("/", chatRouter);
 
-// 404 handler
+// ✅ 404 handler
 app.use((req, res, next) => {
   next(new ApiError(404, "Route not found"));
 });
 
-// Error handler (MUST be last)
+// ✅ Error handler (last middleware)
 app.use(errorHandler);
 
+// ✅ Connect DB + Start server
 connectDB()
   .then(() => {
-    app.listen(process.env.PORT || 3000);
+    const PORT = process.env.PORT || 3000;
+    app.listen(PORT, "0.0.0.0", () => {
+      console.log(`✅ Server running on port ${PORT}`);
+    });
   })
   .catch((err) => {
-    // handle error silently or with custom logic
+    console.error("❌ Failed to connect to database", err);
   });
-
