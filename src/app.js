@@ -35,9 +35,10 @@ app.use(express.json());
 app.use(cookieParser());
 
 // ✅ Test endpoint
-app.get("/api/test", (req, res) => {
-  res.json({ success: true, message: "Backend is working!" });
+app.get("/", (req, res) => {
+  res.json({ success: true, message: "API is live 🚀" });
 });
+
 
 // ✅ API Routes with prefixes
 app.use("/api/auth", authRouter);
