@@ -31,12 +31,15 @@ authRouter.post("/signup", async (req, res, next) => {
 
     const token = savedUser.generateJWT();
 
-    res.cookie("token", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      maxAge: 24 * 60 * 60 * 1000,
-    });
+   res.cookie("token", token, {
+  httpOnly: true, // can't be accessed by JS
+  secure: process.env.NODE_ENV === "production", // only HTTPS in production
+  sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", // allow cross-site in prod
+  maxAge: 24 * 60 * 60 * 1000, // 1 day
+  domain: process.env.NODE_ENV === "production" ? ".yourdomain.com" : "localhost", // adjust for prod
+  path: "/", // make cookie accessible throughout site
+});
+
 
     return res
       .status(201)
@@ -63,12 +66,15 @@ authRouter.post("/login", async (req, res, next) => {
 
     const token = userOne.generateJWT();
 
-    res.cookie("token", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      maxAge: 24 * 60 * 60 * 1000,
-    });
+   res.cookie("token", token, {
+  httpOnly: true, // can't be accessed by JS
+  secure: process.env.NODE_ENV === "production", // only HTTPS in production
+  sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", // allow cross-site in prod
+  maxAge: 24 * 60 * 60 * 1000, // 1 day
+  domain: process.env.NODE_ENV === "production" ? ".yourdomain.com" : "localhost", // adjust for prod
+  path: "/", // make cookie accessible throughout site
+});
+
 
     const user = userOne.toObject();
     delete user.password;
