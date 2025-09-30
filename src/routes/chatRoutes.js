@@ -7,7 +7,7 @@ const ApiError = require("../utils/apiError.js");
 const chatrouter = express.Router();
 
 // Get or create chat room
-chatrouter.post("/api/chat/room", userAuth, async (req, res, next) => {
+chatrouter.post("/room", userAuth, async (req, res, next) => {
   try {
     const { userId } = req.body; // the other userId
     const currentUserId = req.user._id;
@@ -34,7 +34,7 @@ chatrouter.post("/api/chat/room", userAuth, async (req, res, next) => {
 });
 
 // Get messages of a room
-chatrouter.get("/api/chat/messages/:roomId", userAuth, async (req, res, next) => {
+chatrouter.get("/messages/:roomId", userAuth, async (req, res, next) => {
   try {
     const { roomId } = req.params;
 
@@ -53,7 +53,7 @@ chatrouter.get("/api/chat/messages/:roomId", userAuth, async (req, res, next) =>
 });
 
 // Send message
-chatrouter.post("/api/chat/message", userAuth, async (req, res, next) => {
+chatrouter.post("/message", userAuth, async (req, res, next) => {
   try {
     const { roomId, text } = req.body;
 

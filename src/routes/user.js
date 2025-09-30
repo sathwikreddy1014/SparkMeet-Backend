@@ -18,7 +18,7 @@ const USER_SAFE_DATA = [
 /**
  * GET /user/requests/received
  */
-userRouter.get("/api/user/requests/received", userAuth, async (req, res, next) => {
+userRouter.get("/requests/received", userAuth, async (req, res, next) => {
   try {
     const loggedInUser = req.user._id;
 
@@ -40,7 +40,7 @@ userRouter.get("/api/user/requests/received", userAuth, async (req, res, next) =
 /**
  * GET /user/connections
  */
-userRouter.get("/api/user/connections", userAuth, async (req, res, next) => {
+userRouter.get("/connections", userAuth, async (req, res, next) => {
   try {
     const loggedInUser = req.user;
 
@@ -76,7 +76,7 @@ userRouter.get("/api/user/connections", userAuth, async (req, res, next) => {
 /**
  * GET /feed
  */
-userRouter.get('/api/user/feed', userAuth, async (req, res, next) => {
+userRouter.get('/feed', userAuth, async (req, res, next) => {
   try {
     const loggedInUser = req.user;
 

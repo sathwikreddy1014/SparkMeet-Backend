@@ -11,7 +11,7 @@ const requestRouter = express.Router();
 /**
  * POST /request/send/:status/:touserId
  */
-requestRouter.post('/api/request/send/:status/:touserId', userAuth, async (req, res, next) => {
+requestRouter.post('/send/:status/:touserId', userAuth, async (req, res, next) => {
   try {
     const fromuserId = req.user._id;
     const touserId = req.params.touserId;
@@ -63,7 +63,7 @@ requestRouter.post('/api/request/send/:status/:touserId', userAuth, async (req, 
 /**
  * POST /request/review/:status/:requestId
  */
-requestRouter.post('/api/request/review/:status/:requestId', userAuth, async (req, res, next) => {
+requestRouter.post('/review/:status/:requestId', userAuth, async (req, res, next) => {
   try {
     const loggedInUser = req.user;
     const { status, requestId } = req.params;
