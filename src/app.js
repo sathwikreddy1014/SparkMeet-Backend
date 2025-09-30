@@ -23,8 +23,11 @@ const allowedOrigins = [process.env.FRONTEND_ORIGIN]; // e.g., https://your-fron
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) callback(null, true);
-      else callback(new Error("Not allowed by CORS"));
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
     },
     credentials: true,
   })
@@ -34,11 +37,14 @@ app.use(
 app.use(express.json());
 app.use(cookieParser());
 
-// ✅ Test endpoint
+// ✅ Health check / base route
 app.get("/", (req, res) => {
-  res.json({ success: true, message: "API is live 🚀" });
+  res.status(200).json({
+    success: true,
+    message: "🚀 SparkMeet Backend is live!",
+    timestamp: new Date().toISOString(),
+  });
 });
-
 
 // ✅ API Routes with prefixes
 app.use("/api/auth", authRouter);
@@ -46,7 +52,6 @@ app.use("/api/profile", profileRouter);
 app.use("/api/request", requestRouter);
 app.use("/api/user", userRouter);
 app.use("/api/chat", chatRouter);
-
 
 // ✅ 404 handler (must be after all routes)
 app.use((req, res, next) => {
