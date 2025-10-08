@@ -19,7 +19,11 @@ const ApiError = require("./utils/apiError");
 const app = express();
 
 // ✅ CORS setup
-const allowedOrigins = [process.env.FRONTEND_ORIGIN]; // e.g., https://your-frontend.com
+const allowedOrigins = [
+  process.env.FRONTEND_ORIGIN,
+  "http://localhost:5173/"
+]; 
+// e.g., https://your-frontend.com
 app.use(
   cors({
     origin: (origin, callback) => {
