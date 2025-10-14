@@ -146,7 +146,6 @@ profileRouter.post('/forgot-password', async (req, res, next) => {
   try {
     const { emailId } = req.body;
     const user = await User.findOne({ emailId });
-    console.log(user);
     
 
     const message = "If an account exists with this email, you will receive a verification code.";
