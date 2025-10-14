@@ -1,17 +1,16 @@
-// src/config/database.js
 const mongoose = require("mongoose");
+const path = require("path");
 const dotenv = require("dotenv");
 
-dotenv.config();
+// Force dotenv to load from the project root
+dotenv.config({ path: path.resolve(__dirname, "../../.env") });
 
 const connectDB = async () => {
   try {
     const uri = process.env.MONGO_URI;
-    console.log("🧩 Mongo URI:", uri); // Debug line
+    console.log("🧩 Loaded MONGO_URI:", uri ? uri.slice(0, 40) + "..." : "undefined");
 
-    if (!uri) {
-      throw new Error("MongoDB URI not found. Check your .env file.");
-    }
+    if (!uri) throw new Error("MONGO_URI not found in environment variables");
 
     await mongoose.connect(uri, {
       useNewUrlParser: true,
