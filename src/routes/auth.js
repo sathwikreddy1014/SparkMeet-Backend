@@ -32,11 +32,14 @@ authRouter.post("/signup", async (req, res, next) => {
     const token = savedUser.generateJWT();
 
     res.cookie("token", token, {
-      httpOnly: true,
-      secure: true,
-      sameSite: "none",
-      maxAge: 24 * 60 * 60 * 1000,
-    });
+  httpOnly: true,            // prevents JS from accessing the cookie
+  secure: true,              // only sent over HTTPS
+  sameSite: "none",          // required for cross-site requests
+  maxAge: 24 * 60 * 60 * 1000, // 1 day in milliseconds
+  domain: ".yourdomain.com", // optional: restrict cookie to your domain
+  path: "/",                 // cookie available on entire site
+});
+
 
     return res
       .status(201)
@@ -64,11 +67,14 @@ authRouter.post("/login", async (req, res, next) => {
     const token = userOne.generateJWT();
 
     res.cookie("token", token, {
-      httpOnly: true,
-      secure: true,
-      sameSite: "none",
-      maxAge: 24 * 60 * 60 * 1000,
-    });
+  httpOnly: true,            // prevents JS from accessing the cookie
+  secure: true,              // only sent over HTTPS
+  sameSite: "none",          // required for cross-site requests
+  maxAge: 24 * 60 * 60 * 1000, // 1 day in milliseconds
+  domain: ".yourdomain.com", // optional: restrict cookie to your domain
+  path: "/",                 // cookie available on entire site
+});
+
 
     const user = userOne.toObject();
     delete user.password;
@@ -84,11 +90,15 @@ authRouter.post("/login", async (req, res, next) => {
 // === LOGOUT ===
 authRouter.post("/logout", (req, res, next) => {
   try {
-    res.cookie("token", null, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-    });
+    res.cookie("token", token, {
+  httpOnly: true,            // prevents JS from accessing the cookie
+  secure: true,              // only sent over HTTPS
+  sameSite: "none",          // required for cross-site requests
+  maxAge: 24 * 60 * 60 * 1000, // 1 day in milliseconds
+  domain: ".yourdomain.com", // optional: restrict cookie to your domain
+  path: "/",                 // cookie available on entire site
+});
+
 
     return res
       .status(200)
