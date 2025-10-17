@@ -31,14 +31,10 @@ authRouter.post("/signup", async (req, res, next) => {
 
     const token = savedUser.generateJWT();
 
-    res.cookie("token", token, {
-  httpOnly: true,            // prevents JS from accessing the cookie
-  secure: true,              // only sent over HTTPS
-  sameSite: "none",          // required for cross-site requests
-  maxAge: 24 * 60 * 60 * 1000, // 1 day in milliseconds
-  domain: ".yourdomain.com", // optional: restrict cookie to your domain
-  path: "/",                 // cookie available on entire site
-});
+
+     res.cookie("token", token, {
+      expires: new Date(Date.now() + 8 * 3600000),
+    });
 
 
     return res
@@ -67,13 +63,8 @@ authRouter.post("/login", async (req, res, next) => {
     const token = userOne.generateJWT();
 
     res.cookie("token", token, {
-  httpOnly: true,            // prevents JS from accessing the cookie
-  secure: true,              // only sent over HTTPS
-  sameSite: "none",          // required for cross-site requests
-  maxAge: 24 * 60 * 60 * 1000, // 1 day in milliseconds
-  domain: ".yourdomain.com", // optional: restrict cookie to your domain
-  path: "/",                 // cookie available on entire site
-});
+        expires: new Date(Date.now() + 8 * 3600000),
+      });
 
 
     const user = userOne.toObject();
@@ -90,15 +81,10 @@ authRouter.post("/login", async (req, res, next) => {
 // === LOGOUT ===
 authRouter.post("/logout", (req, res, next) => {
   try {
-    res.cookie("token", token, {
-  httpOnly: true,            // prevents JS from accessing the cookie
-  secure: true,              // only sent over HTTPS
-  sameSite: "none",          // required for cross-site requests
-  maxAge: 24 * 60 * 60 * 1000, // 1 day in milliseconds
-  domain: ".yourdomain.com", // optional: restrict cookie to your domain
-  path: "/",                 // cookie available on entire site
-});
 
+     res.cookie("token", null, {
+    expires: new Date(Date.now()),
+  });
 
     return res
       .status(200)
