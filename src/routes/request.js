@@ -5,6 +5,7 @@ const ConnectionRequest = require('../models/connectionRequest.js');
 const User = require('../models/user.js');
 const ApiError = require("../utils/apiError.js");
 const ApiResponse = require("../utils/ApiResponse.js");
+const sendEmail = require("../utils/sendemail.js")
 
 const requestRouter = express.Router();
 
@@ -43,6 +44,7 @@ requestRouter.post('/send/:status/:touserId', userAuth, async (req, res, next) =
       return next(new ApiError(400, `Connection Request Already Exists`));
     }
 
+    // Create the connection request
     const connectionRequest = new ConnectionRequest({
       fromuserId,
       touserId,
@@ -50,6 +52,18 @@ requestRouter.post('/send/:status/:touserId', userAuth, async (req, res, next) =
     });
 
     const data = await connectionRequest.save();
+
+    // Send email notification
+    try {
+      const emailRes = await sendEmail.run(
+        user.email, // recipient
+        'sparkmeet.team@gmail.com' // verified sender
+      );
+      console.log('Email sent:', emailRes.MessageId);
+    } catch (emailError) {
+      console.error('Error sending email:', emailError);
+      // optional: you can log this but still allow the request to succeed
+    }
 
     const actionWord = status === 'like' ? 'liked' : 'passed on';
     const displayName = user.firstName || 'the user';
@@ -59,6 +73,7 @@ requestRouter.post('/send/:status/:touserId', userAuth, async (req, res, next) =
     next(error);
   }
 });
+
 
 /**
  * POST /request/review/:status/:requestId
