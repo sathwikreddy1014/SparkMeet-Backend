@@ -1,37 +1,53 @@
-// ses_sendemail.js
 const { SendEmailCommand } = require("@aws-sdk/client-ses");
-const { sesClient } = require("./sesclient");
+const { sesClient } = require("./sesclient.js");
 
-const createSendEmailCommand = (toAddress, fromAddress, subject, textBody, htmlBody) => {
+const createSendEmailCommand = (toAddress, fromAddress, subject, body) => {
   return new SendEmailCommand({
-    Source: fromAddress, // verified sender
-    Destination: { ToAddresses: [toAddress] }, // verified recipient
+    Destination: {
+      CcAddresses: [],
+      ToAddresses: [toAddress],
+    },
     Message: {
-      Subject: { Charset: "UTF-8", Data: subject },
       Body: {
-        Text: { Charset: "UTF-8", Data: textBody },
-        Html: { Charset: "UTF-8", Data: htmlBody },
+        Html: {
+          Charset: "UTF-8",
+          Data: `<h1>${body}</h1>`,
+        },
+        Text: {
+          Charset: "UTF-8",
+          Data: "This is the text format email",
+        },
+      },
+      Subject: {
+        Charset: "UTF-8",
+        Data: subject,
       },
     },
-    ReplyToAddresses: [fromAddress],
+    Source: fromAddress,
+    ReplyToAddresses: [
+      /* more items */
+    ],
   });
 };
 
-const run = async (toAddress, fromAddress) => {
-  const subject = "SparkMeet Sandbox Test Email";
-  const textBody = "Hello! This is a plain text test email from SparkMeet using SES sandbox.";
-  const htmlBody = "<h1>Hello!</h1><p>This is an HTML test email from SparkMeet using SES sandbox.</p>";
-
-  const sendEmailCommand = createSendEmailCommand(toAddress, fromAddress, subject, textBody, htmlBody);
+const run = async (subject, body, toEmailId) => {
+  const sendEmailCommand = createSendEmailCommand(
+    "sparkmeet.team@gmail.com",
+    "support@sparkmeet.shop",
+    subject,
+    body
+  );
 
   try {
-    const response = await sesClient.send(sendEmailCommand);
-    console.log("Email sent successfully! MessageId:", response.MessageId);
-    return response;
-  } catch (err) {
-    console.error("Error sending email:", err);
-    throw err;
+    return await sesClient.send(sendEmailCommand);
+  } catch (caught) {
+    if (caught instanceof Error && caught.name === "MessageRejected") {
+      const messageRejectedError = caught;
+      return messageRejectedError;
+    }
+    throw caught;
   }
 };
 
+// snippet-end:[ses.JavaScript.email.sendEmailV3]
 module.exports = { run };

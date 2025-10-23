@@ -5,20 +5,20 @@ const ConnectionRequest = require('../models/connectionRequest.js');
 const User = require('../models/user.js');
 const ApiError = require("../utils/apiError.js");
 const ApiResponse = require("../utils/ApiResponse.js");
-const sendEmail = require("../utils/sendemail.js")
+const {  run: sendEmail } = require("../utils/sendemail.js"); // ✅ fixed import
 
 const requestRouter = express.Router();
 
 /**
  * POST /request/send/:status/:touserId
  */
-requestRouter.post('/send/:status/:touserId', userAuth, async (req, res, next) => {
+requestRouter.post("/send/:status/:touserId", userAuth, async (req, res, next) => {
   try {
     const fromuserId = req.user._id;
     const touserId = req.params.touserId;
     const status = req.params.status;
 
-    const allowedStatus = ['like', 'pass'];
+    const allowedStatus = ["like", "pass"];
     if (!allowedStatus.includes(status)) {
       return next(new ApiError(400, `Invalid status '${status}'`));
     }
@@ -36,44 +36,63 @@ requestRouter.post('/send/:status/:touserId', userAuth, async (req, res, next) =
     const existingConnectionRequest = await ConnectionRequest.findOne({
       $or: [
         { fromuserId, touserId },
-        { fromuserId: touserId, touserId: fromuserId }
-      ]
+        { fromuserId: touserId, touserId: fromuserId },
+      ],
     });
 
     if (existingConnectionRequest) {
       return next(new ApiError(400, `Connection Request Already Exists`));
     }
 
-    // Create the connection request
+    // Create new connection request
     const connectionRequest = new ConnectionRequest({
       fromuserId,
       touserId,
-      status
+      status,
     });
 
     const data = await connectionRequest.save();
 
     // Send email notification
-    try {
-      const emailRes = await sendEmail.run(
-        user.email, // recipient
-        'sparkmeet.team@gmail.com' // verified sender
-      );
-      console.log('Email sent:', emailRes.MessageId);
-    } catch (emailError) {
-      console.error('Error sending email:', emailError);
-      // optional: you can log this but still allow the request to succeed
-    }
+    // try {
+    //   console.log(`📧 Sending email to: ${user.emailId || "sathwik1014@gmail.com"}`);
 
-    const actionWord = status === 'like' ? 'liked' : 'passed on';
-    const displayName = user.firstName || 'the user';
+    //   await sendSparkmeetEmail({
+    //     toAddress: "sathwikreddy496@gmail.com", // ✅ fixed verified recipient
+    //     fromAddress: "sparkmeet.team@gmail.com", // ✅ fixed verified sender
+    //     subject: "💌 New Connection Request on SparkMeet!",
+    //     htmlBody: `
+    //       <h2>Hey ${user.firstName || "there"} 👋</h2>
+    //       <p>Someone just <b>${status}</b> you on SparkMeet!</p>
+    //       <p>Log in to your account to check the new connection.</p>
+    //       <br/>
+    //       <p>💖 With love,<br/>The SparkMeet Team</p>
+    //     `,
+    //   });
+
+    //   console.log("✅ Email notification sent to sathwik1014@gmail.com");
+    // } catch (emailError) {
+    //   console.error("❌ Error sending email:", emailError.message);
+    // }
+
+
+
+  const emailRes = await sendEmail(
+        "A new friend request from " + req.user.firstName,
+        req.user.firstName + " is " + status + " in "
+      );
+
+     
+    
+
+    const actionWord = status === "like" ? "liked" : "passed on";
+    const displayName = user.firstName || "the user";
 
     res.json(new ApiResponse(200, data, `You have ${actionWord} ${displayName}`));
   } catch (error) {
     next(error);
   }
 });
-
 
 /**
  * POST /request/review/:status/:requestId
