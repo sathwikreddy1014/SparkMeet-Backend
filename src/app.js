@@ -11,7 +11,8 @@ const profileRouter = require("./routes/profile");
 const requestRouter = require("./routes/request");
 const userRouter = require("./routes/user");
 const chatRouter = require("./routes/chatRoutes");
-const errorHandler = require("./utils/errorHandler"); // ✅ Import custom error handler
+const errorHandler = require("./utils/errorHandler");
+const paymentRouter = require("./routes/payment"); // ✅ Import custom error handler
 
 // ✅ Middleware setup
 app.use(
@@ -21,6 +22,7 @@ app.use(
   })
 );
 app.use(express.json());
+app.use(express.urlencoded({ extended: true })); // optional for form data
 app.use(cookieParser());
 
 // ✅ Routes
@@ -29,6 +31,7 @@ app.use("/", profileRouter);
 app.use("/", requestRouter);
 app.use("/", userRouter);
 app.use("/", chatRouter);
+app.use("/", paymentRouter)
 
 // ✅ Custom error-handling middleware (MUST be after all routes)
 app.use(errorHandler);
