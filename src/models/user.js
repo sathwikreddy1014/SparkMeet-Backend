@@ -33,6 +33,13 @@ const userSchema = new mongoose.Schema(
     drinking: { type: [String], trim: true, default: "" },
     smoking: { type: [String], trim: true, default: "" },
     diet: { type: [String], trim: true, default: "" },
+    isPremium: {
+      type: Boolean,
+      default: false,
+    },
+    membershipType: {
+      type: String,
+    },
     dailyFeed: {
   date: { type: Date, default: null },
   count: { type: Number, default: 0 }

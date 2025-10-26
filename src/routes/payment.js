@@ -2,22 +2,25 @@ const express = require("express");
 const { userAuth } = require("../middlewares/adminAuth");
 const razorpayInstance = require("../utils/razorpay");
 const Payment = require("../models/payments"); // import your payment model
+const { membershipAmount } = require("../utils/constants");
 const paymentRouter = express.Router();
 
 // Create Payment Order
 paymentRouter.post("/payment/create", userAuth, async (req, res) => {
   try {
-    const amount = 70000; // hardcoded amount in paise (₹700)
-    const membershipType = "standard"; // hardcoded membership
+   
+    const { membershipType } = req.body;
+    const { firstName, lastName, emailId } = req.user;
 
-    // 1️⃣ Create order in Razorpay
     const order = await razorpayInstance.orders.create({
-      amount,
+      amount: membershipAmount[membershipType] * 100,
       currency: "INR",
-      receipt: `receipt_${Date.now()}`,
+      receipt: "receipt#1",
       notes: {
-        membershipType,
-        userId: req.user?._id || "testUser",
+        firstName,
+        lastName,
+        emailId,
+        membershipType: membershipType,
       },
     });
 
@@ -25,25 +28,22 @@ paymentRouter.post("/payment/create", userAuth, async (req, res) => {
 
     // 2️⃣ Save order to MongoDB
     const payment = new Payment({
-      userId: req.user?._id || null,
-      membershipType,
-      razorpayOrderId: order.id,
+      userId: req.user._id,
+      orderId: order.id,
+      status: order.status,
       amount: order.amount,
       currency: order.currency,
-      status: "created",
+      receipt: order.receipt,
+      notes: order.notes,
     });
 
-    const savedPayment = await payment.save();
+   const savedPayment = await payment.save();
     console.log("💾 Payment saved in DB:", savedPayment);
 
     // 3️⃣ Respond with order details
-    res.status(201).json({ ...savedPayment.toJSON()});
-  } catch (error) {
-    console.error("❌ Payment Creation Error:", error);
-    return res.status(500).json({
-      msg: "Internal Server Error",
-      error: error.message,
-    });
+  res.json({ ...savedPayment.toJSON(), keyId: process.env.RAZORPAY_KEY_ID });
+  } catch (err) {
+    return res.status(500).json({ msg: err.message });
   }
 });
 
