@@ -52,35 +52,53 @@ paymentRouter.post("/payment/create", userAuth, async (req, res) => {
 
 paymentRouter.post("/payment/webhook", async (req, res) => {
   try {
-    const webhookSignature = req.get("X-Razorpay-Signature")
-    const isWebhookValid = validateWebhookSignature(JSON.stringify(req.body), webhookSignature, process.env.RAZORPAY_WEBHOOK_SECRET)
-    
+    const webhookSignature = req.get("X-Razorpay-Signature");
+    console.log("Signature:", webhookSignature);
+    const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET;
+
+    // Razorpay sends raw body as buffer, convert to string
+    const body = req.body.toString();
+    console.log("Raw body:", req.body.toString());
+
+    const isWebhookValid = validateWebhookSignature(
+      body,
+      webhookSignature,
+      webhookSecret
+    );
+
     if (!isWebhookValid) {
-      return res.status(400).json({msg: "Webhook Signature is not valid"})
+      return res.status(400).json({ msg: "Invalid webhook signature" });
     }
 
-     const paymentDetails = req.body.payload.payment.entity;
-      
-      const payment = await Payment.findOne({orderId : paymentDetails.order_id})
-      payment.status = paymentDetails.status;
+    const parsedBody = JSON.parse(body);
+    console.log("Parsed payload:", parsedBody);
+    const paymentDetails = parsedBody.payload.payment.entity;
 
-      await payment.save();
+    // Ensure payment exists
+    const payment = await Payment.findOne({ orderId: paymentDetails.order_id });
+    if (!payment) {
+      return res.status(404).json({ msg: "Payment record not found" });
+    }
 
-      const user = await User.findOne({_id: payment.userId})
-      user.isPremium = true;
-      user.membershipType = payment.notes.membershipType;
+    // Update payment status
+    payment.status = paymentDetails.status;
+    await payment.save();
+
+    // Update user membership
+    const user = await User.findById(payment.userId);
+    if (user) {
+      user.isPremium = paymentDetails.status === "captured";
+      user.membershipType = payment.notes?.membershipType || "basic";
       await user.save();
+    }
 
-    // if (req.body.event == "payment.captured") {
-
-     
-    // }
-    // if (req.body.event == "payment.failed") {
-      
-    // }
-    res.status(200).json({msg: "webhook received successfully"})
+    return res.status(200).json({ msg: "Webhook processed successfully" });
   } catch (error) {
-    return res.status(500).json({msg:  error.message})
+    console.error("Webhook error:", error);
+    return res.status(500).json({ msg: error.message });
   }
-})
+});
+
+
+
 module.exports = paymentRouter;

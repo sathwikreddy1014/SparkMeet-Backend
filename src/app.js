@@ -13,6 +13,7 @@ const userRouter = require("./routes/user");
 const chatRouter = require("./routes/chatRoutes");
 const errorHandler = require("./utils/errorHandler");
 const paymentRouter = require("./routes/payment"); // ✅ Import custom error handler
+const { validateWebhookSignature } = require ("razorpay/dist/utils/razorpay-utils.js");
 
 // ✅ Middleware setup
 app.use(
@@ -21,6 +22,7 @@ app.use(
     credentials: true,
   })
 );
+app.use("/api/payment/webhook", express.raw({ type: "application/json" }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true })); // optional for form data
 app.use(cookieParser());
