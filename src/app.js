@@ -3,6 +3,7 @@ const { connectDB } = require("./config/database");
 const app = express();
 const cookieParser = require("cookie-parser");
 const cors = require("cors");
+const bodyParser = require("body-parser");
 require("dotenv").config();
 require("./utils/cronJob");
 
@@ -11,11 +12,10 @@ const profileRouter = require("./routes/profile");
 const requestRouter = require("./routes/request");
 const userRouter = require("./routes/user");
 const chatRouter = require("./routes/chatRoutes");
-const errorHandler = require("./utils/errorHandler");
 const paymentRouter = require("./routes/payment");
-const { validateWebhookSignature } = require("razorpay/dist/utils/razorpay-utils.js");
+const errorHandler = require("./utils/errorHandler");
 
-// ✅ Middleware setup
+// ✅ CORS
 app.use(
   cors({
     origin: process.env.FRONTEND_ORIGIN,
@@ -24,9 +24,14 @@ app.use(
 );
 
 // ✅ Must come BEFORE express.json()
-app.use("/payment/webhook", express.raw({ type: "application/json" }));
+// Razorpay sends RAW body for signature validation
+app.post(
+  "/payment/webhook",
+  bodyParser.raw({ type: "application/json" }),
+  require("./routes/payment").handleWebhook
+);
 
-// Normal parsers (for other routes)
+// ✅ Normal parsers for all other routes
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
@@ -39,13 +44,16 @@ app.use("/", userRouter);
 app.use("/", chatRouter);
 app.use("/", paymentRouter);
 
-// ✅ Error Handler
+// ✅ Custom error handler
 app.use(errorHandler);
 
+// ✅ DB + Server Start
 connectDB()
   .then(() => {
-    console.log("Database connection established...");
+    console.log("✅ Database connected successfully");
     const PORT = process.env.PORT || 3000;
-    app.listen(PORT, () => console.log(`Server running on port ${PORT}...`));
+    app.listen(PORT, () =>
+      console.log(`🚀 Server running on port ${PORT}...`)
+    );
   })
-  .catch((err) => console.error("Database connection failed!", err));
+  .catch((err) => console.error("❌ Database connection failed:", err));
