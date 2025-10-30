@@ -4,6 +4,7 @@ const app = express();
 const cookieParser = require("cookie-parser");
 const cors = require("cors");
 const bodyParser = require("body-parser");
+const http= require("http")
 require("dotenv").config();
 require("./utils/cronJob");
 
@@ -12,9 +13,10 @@ const authRouter = require("./routes/auth");
 const profileRouter = require("./routes/profile");
 const requestRouter = require("./routes/request");
 const userRouter = require("./routes/user");
-const chatRouter = require("./routes/chatRoutes");
 const paymentRouter = require("./routes/payment");
 const errorHandler = require("./utils/errorHandler");
+const initializeSocket = require("./config/socket");
+const chatRouter = require("./routes/chatRoutes");
 
 // ✅ CORS
 app.use(
@@ -47,8 +49,11 @@ app.use("/", authRouter);
 app.use("/", profileRouter);
 app.use("/", requestRouter);
 app.use("/", userRouter);
-app.use("/", chatRouter);
 app.use("/", paymentRouter);
+app.use("/", chatRouter);
+
+const server = http.createServer(app);
+initializeSocket(server);
 
 /* ======================================================
    🔹 ERROR HANDLER
@@ -62,6 +67,6 @@ connectDB()
   .then(() => {
     console.log("✅ Database connected successfully");
     const PORT = process.env.PORT || 3000;
-    app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}...`));
+    server.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}...`));
   })
   .catch((err) => console.error("❌ Database connection failed:", err));
