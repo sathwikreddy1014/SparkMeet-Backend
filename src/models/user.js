@@ -9,8 +9,13 @@ const userSchema = new mongoose.Schema(
     emailId: { type: String, required: true, unique: true, lowercase: true, trim: true },
     password: { type: String, required: true, trim: true, minlength: 8 },
     photoUrl: { type: [String], default: []},
-    age: { type: Number, min: 18, max: 100 },
-    gender: { type: String, trim: true, lowercase: true }, // removed enum
+    age: { 
+  type: Number, 
+  min: [18, "Min age is 18"], 
+  max: 55 
+},
+
+    gender: { type: String, trim: true, lowercase: true }, 
     about: { type: String, maxlength: 500, default: "" },
     location: { type: String, trim: true, default: "" },
     height: {
