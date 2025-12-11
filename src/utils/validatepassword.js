@@ -4,6 +4,8 @@ const bcrypt = require('bcrypt'); // You forgot to require bcrypt
 const validatePassword = async (req) => {
 
     const { password, newPassword }  = req.body;
+    console.log(password, newPassword);
+    
 
     const currentuser = req.user;
 

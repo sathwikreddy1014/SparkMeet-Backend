@@ -49,64 +49,82 @@ paymentRouter.post("/payment/create", userAuth, async (req, res) => {
   }
 });
 
+
 /* ======================================================
-   🔹 2️⃣ HANDLE WEBHOOK (Razorpay → Your Server)
+   🔹 2️⃣ HANDLE RAZORPAY WEBHOOK (Payment Success)
 ====================================================== */
-paymentRouter.post("/payment/webhook", express.raw({ type: "*/*" }), async (req, res) => {
-  try {
-    console.log("🔥 Webhook hit:", req.headers);
+paymentRouter.post(
+  "/payment/webhook",
+  express.raw({ type: "*/*" }), // REQUIRED for signature validation
+  async (req, res) => {
+    try {
+      console.log("🔥 Webhook received:", req.headers);
 
-    // Handle manual test webhook (no signature)
-    if (!req.headers["x-razorpay-signature"]) {
-      console.log("🧪 Manual webhook test:", req.body);
-      return res.status(200).json({ msg: "Test webhook received successfully" });
-    }
+      // 1️⃣ Test webhook WITHOUT signature
+      if (!req.headers["x-razorpay-signature"]) {
+        console.log("🧪 Test webhook (no signature):", req.body);
+        return res.status(200).json({ msg: "Test webhook received" });
+      }
 
-    const signature = req.headers["x-razorpay-signature"];
-    const secret = process.env.RAZORPAY_WEBHOOK_SECRET;
+      // 2️⃣ Validate Signature
+      const signature = req.headers["x-razorpay-signature"];
+      const secret = process.env.RAZORPAY_WEBHOOK_SECRET;
+      const body = req.body.toString("utf8");
 
-    const bodyString = req.body.toString("utf8");
-    const isValid = validateWebhookSignature(bodyString, signature, secret);
+      const isValid = validateWebhookSignature(body, signature, secret);
+      if (!isValid) {
+        console.warn("⚠️ Invalid webhook signature");
+        return res.status(400).json({ msg: "Invalid signature" });
+      }
 
-    if (!isValid) {
-      console.warn("⚠️ Invalid Razorpay signature");
-      return res.status(400).json({ msg: "Invalid signature" });
-    }
+      // 3️⃣ Parse Razorpay event body
+      const payload = JSON.parse(body);
+      const event = payload.event;
+      const paymentData = payload.payload.payment.entity;
 
-    const payload = JSON.parse(bodyString);
-    const paymentData = payload.payload.payment.entity;
+      console.log("🔔 Razorpay Event:", event);
+      console.log("💰 Payment Status:", paymentData.status);
 
-    const payment = await Payment.findOne({ orderId: paymentData.order_id });
-    if (payment) {
+      // 4️⃣ Fetch payment from DB
+      const payment = await Payment.findOne({ orderId: paymentData.order_id });
+      if (!payment) {
+        console.warn("⚠️ No payment found:", paymentData.order_id);
+        return res.status(200).json({ msg: "Payment not found" });
+      }
+
+      // 5️⃣ Update Payment Record
       payment.status = paymentData.status;
       await payment.save();
 
+      // 6️⃣ Update User Premium Status
       const user = await User.findById(payment.userId);
       if (user) {
-        user.isPremium = paymentData.status === "captured";
-        user.membershipType = payment.notes?.membershipType || "basic";
+        if (paymentData.status === "captured") {
+          user.isPremium = true; // ✅ SUCCESS — Activate Premium
+          user.membershipType = payment.notes?.membershipType || "basic";
+        } else {
+          user.isPremium = false;
+        }
         await user.save();
       }
 
-      console.log("✅ Webhook processed:", paymentData.status);
-    } else {
-      console.warn("⚠️ No payment record found for:", paymentData.order_id);
-    }
+      console.log("✅ Webhook processed successfully");
 
-    res.status(200).json({ msg: "Webhook processed successfully" });
-  } catch (err) {
-    console.error("🚨 Webhook error:", err);
-    res.status(500).json({ msg: err.message });
+      res.status(200).json({ msg: "Webhook processed" });
+    } catch (err) {
+      console.error("🚨 Webhook Error:", err);
+      res.status(500).json({ msg: err.message });
+    }
   }
-});
+);
+
 
 /* ======================================================
-   🔹 3️⃣ VERIFY PREMIUM STATUS
+   🔹 3️⃣ VERIFY PREMIUM STATUS (Frontend Check)
 ====================================================== */
 paymentRouter.get("/premium/verify", userAuth, async (req, res) => {
   try {
-    const user = req.user;
-    return res.json({ isPremium: user.isPremium || false });
+    res.json({ isPremium: req.user.isPremium || false });
   } catch (err) {
     console.error("❌ /premium/verify error:", err);
     res.status(500).json({ msg: err.message });

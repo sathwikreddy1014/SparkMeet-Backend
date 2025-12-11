@@ -32,7 +32,7 @@ app.use(
 // This must come BEFORE express.json()
 app.use(
   "/payment/webhook",
-  bodyParser.raw({ type: "application/json" })
+  bodyParser.raw({ type: "*/*" })
 );
 
 /* ======================================================
