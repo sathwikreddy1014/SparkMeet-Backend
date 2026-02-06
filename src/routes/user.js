@@ -78,60 +78,79 @@ userRouter.get("/connections", userAuth, async (req, res, next) => {
  */
 userRouter.get('/feed', userAuth, async (req, res, next) => {
   try {
-    const loggedInUser = req.user;
+  const loggedInUser = req.user;
 
-    let limit = parseInt(req.query.limit) || 10;
-    const page = parseInt(req.query.page) || 1;
-    const skip = (page - 1) * limit;
-    limit = Math.min(limit, 50);
+  const isPremium = loggedInUser.isPremium === true;
 
-    // Find all requests where current user is involved
-    const connectionRequests = await ConnectionRequest.find({
-      $or: [
-        { fromuserId: loggedInUser._id },
-        { touserId: loggedInUser._id }
-      ]
-    }).select("fromuserId touserId");
+  // 🔐 Limit based on premium
+  let limit = isPremium ? 20 : 10;
 
-    const hideUsersFromFeed = new Set();
-    connectionRequests.forEach(request => {
-      hideUsersFromFeed.add(request.fromuserId.toString());
-      hideUsersFromFeed.add(request.touserId.toString());
-    });
-    hideUsersFromFeed.add(loggedInUser._id.toString());
-
-    const candidates = await User.find({
-      _id: { $nin: Array.from(hideUsersFromFeed) }
-    }).select(USER_SAFE_DATA);
-
-    const overlap = (arr1, arr2) => (arr1 && arr2 ? arr1.filter(item => arr2.includes(item)).length : 0);
-
-    const scored = candidates.map(candidate => {
-      let score = 0;
-      score += overlap(loggedInUser.hobbies, candidate.hobbies) * 2;
-      score += overlap(loggedInUser.favoriteMovies, candidate.favoriteMovies);
-      score += overlap(loggedInUser.favoriteMusic, candidate.favoriteMusic);
-      score += overlap(loggedInUser.sports, candidate.sports);
-      score += overlap(loggedInUser.travelPreferences, candidate.travelPreferences);
-
-      if (loggedInUser.drinking?.toString() === candidate.drinking?.toString()) score += 2;
-      if (loggedInUser.smoking?.toString() === candidate.smoking?.toString()) score += 2;
-      if (loggedInUser.diet?.toString() === candidate.diet?.toString()) score += 2;
-
-      return { candidate, score };
-    });
-
-    scored.sort((a, b) => b.score - a.score);
-    const paged = scored.slice(skip, skip + limit);
-
-    res.json(new ApiResponse(
-      200,
-      paged.map(item => ({ ...item.candidate._doc, matchScore: item.score })),
-      "Feed fetched successfully"
-    ));
-  } catch (err) {
-    next(err);
+  // Optional: allow premium users to request smaller limits
+  if (req.query.limit && isPremium) {
+    limit = Math.min(parseInt(req.query.limit), 50);
   }
+
+  const page = parseInt(req.query.page) || 1;
+  const skip = (page - 1) * limit;
+
+  // Find all requests where current user is involved
+  const connectionRequests = await ConnectionRequest.find({
+    $or: [
+      { fromuserId: loggedInUser._id },
+      { touserId: loggedInUser._id }
+    ]
+  }).select("fromuserId touserId");
+
+  const hideUsersFromFeed = new Set();
+
+  connectionRequests.forEach(request => {
+    hideUsersFromFeed.add(request.fromuserId.toString());
+    hideUsersFromFeed.add(request.touserId.toString());
+  });
+
+  hideUsersFromFeed.add(loggedInUser._id.toString());
+
+  const candidates = await User.find({
+    _id: { $nin: Array.from(hideUsersFromFeed) }
+  }).select(USER_SAFE_DATA);
+
+  const overlap = (arr1, arr2) =>
+    arr1 && arr2 ? arr1.filter(item => arr2.includes(item)).length : 0;
+
+  const scored = candidates.map(candidate => {
+    let score = 0;
+
+    score += overlap(loggedInUser.hobbies, candidate.hobbies) * 2;
+    score += overlap(loggedInUser.favoriteMovies, candidate.favoriteMovies);
+    score += overlap(loggedInUser.favoriteMusic, candidate.favoriteMusic);
+    score += overlap(loggedInUser.sports, candidate.sports);
+    score += overlap(loggedInUser.travelPreferences, candidate.travelPreferences);
+
+    if (loggedInUser.drinking?.toString() === candidate.drinking?.toString()) score += 2;
+    if (loggedInUser.smoking?.toString() === candidate.smoking?.toString()) score += 2;
+    if (loggedInUser.diet?.toString() === candidate.diet?.toString()) score += 2;
+
+    return { candidate, score };
+  });
+
+  scored.sort((a, b) => b.score - a.score);
+
+  const paged = scored.slice(skip, skip + limit);
+
+  res.json(
+    new ApiResponse(
+      200,
+      paged.map(item => ({
+        ...item.candidate._doc,
+        matchScore: item.score
+      })),
+      "Feed fetched successfully"
+    )
+  );
+} catch (err) {
+  next(err);
+}
+
 });
 
 module.exports = userRouter;
